@@ -1,0 +1,1610 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f0d0b">
+<title>村庄监工 · 升级完成提醒</title>
+<style>
+  :root{
+    --bg:#0f0d0b; --card:#1b1713; --card2:#231d17; --line:#332b23;
+    --txt:#f5efe6; --muted:#9a8f82; --accent:#ffb020; --ok:#5bd18b; --warn:#ff7a45; --blue:#6aa9ff;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+    font-size:15px;line-height:1.45}
+  body{padding:0 14px calc(24px + var(--safe-b));max-width:640px;margin:0 auto}
+  header{display:flex;align-items:center;gap:10px;padding:18px 2px 12px}
+  header h1{font-size:19px;margin:0;letter-spacing:.5px;font-weight:700}
+  header .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .grow{flex:1}
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+  .btn{background:var(--accent);color:#241a06;font-weight:700;border-radius:12px;padding:12px 16px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:filter .15s}
+  .btn:active{filter:brightness(.9)}
+  .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line);font-weight:600}
+  .btn.small{padding:8px 12px;font-size:13px;border-radius:10px}
+  .iconbtn{width:38px;height:38px;border-radius:11px;background:var(--card2);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:17px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+  h2{font-size:13px;color:var(--muted);margin:0 0 10px;font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+  textarea{width:100%;min-height:92px;background:#141110;color:var(--txt);border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;font-size:13px;font-family:ui-monospace,Consolas,monospace;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--accent)}
+  .row{display:flex;gap:8px;align-items:center}
+  .row.wrap{flex-wrap:wrap}
+  .hint{font-size:12px;color:var(--muted);line-height:1.55}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 8px;border-radius:999px;
+    background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+  .pill.ok{color:var(--ok);border-color:#245c3d;background:#12251a}
+  .pill.warn{color:var(--warn);border-color:#5c3324;background:#251710}
+  .pill.blue{color:var(--blue);border-color:#24405c;background:#101a25}
+
+  .task{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:10px;position:relative;overflow:hidden}
+  .task.soon{border-color:#6b4a12}
+  .task.done{opacity:.55}
+  .task .top{display:flex;align-items:flex-start;gap:10px}
+  .task .cat{font-size:11px;color:var(--muted);letter-spacing:.4px}
+  .task .name{font-size:16px;font-weight:700;margin-top:1px}
+  .task .name .lv{color:var(--accent);font-size:13px;font-weight:600;margin-left:6px}
+  .task .time{font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;text-align:right;line-height:1.1;
+    letter-spacing:.5px}
+  .task .time.small{font-size:15px}
+  .task .fin{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+  .bar{height:4px;border-radius:99px;background:#2a231c;margin-top:11px;overflow:hidden}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#ff7a45);border-radius:99px;
+    transition:width .6s linear}
+  .task .foot{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .task .foot .hint{font-size:11px}
+  .tabs{display:flex;gap:6px;margin:0 0 12px;position:sticky;top:0;z-index:5;background:var(--bg);padding:6px 0}
+  .tabs button{flex:1;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+    color:var(--muted);font-size:13px;font-weight:600}
+  .tabs button.on{background:#221a0c;border-color:var(--accent);color:var(--accent)}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:13px;line-height:1.7}
+
+  .sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:50;
+    align-items:flex-end;justify-content:center;backdrop-filter:blur(2px)}
+  .sheet.open{display:flex}
+  .sheet .panel{background:#171310;border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;
+    width:100%;max-width:640px;max-height:88vh;overflow:auto;padding:18px 16px calc(20px + var(--safe-b))}
+  .sheet .panel h3{margin:0 0 4px;font-size:17px}
+  .field{margin:14px 0}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input[type=text],.field input[type=number],.field select{width:100%;background:#12100e;color:var(--txt);
+    border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:14px;font-family:inherit}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:64px;padding:9px 8px;border-radius:10px;background:#12100e;border:1px solid var(--line);
+    font-size:13px;color:var(--muted)}
+  .seg button.on{border-color:var(--accent);color:var(--accent);background:#221a0c}
+  .toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translateX(-50%) translateY(20px);
+    background:#2c241a;border:1px solid #4a3b26;color:var(--txt);padding:10px 16px;border-radius:12px;font-size:13px;
+    opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .filelabel{display:inline-flex}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="grow">
+    <h1>🏰 村庄监工</h1>
+    <div class="sub" id="subtitle">导入 JSON，升级到点推送到手机</div>
+  </div>
+  <button class="iconbtn" id="btnSettings" aria-label="设置">⚙️</button>
+</header>
+
+<section id="importSection">
+  <h2>导入村庄数据</h2>
+  <div class="hint" style="margin-bottom:10px">
+    游戏内：设置 → 更多设置 → 导出村庄数据（JSON），复制后粘贴到这里。数据只在你手机本地解析。
+  </div>
+  <textarea id="jsonInput" placeholder='{"tag":"#XXXX","timestamp":1793532169,"buildings":[...]}'></textarea>
+  <div class="hint" id="charCount" style="margin-top:6px;font-variant-numeric:tabular-nums"></div>
+  <div class="row wrap" style="margin-top:10px">
+    <button class="btn" id="btnClip" style="flex:1">📋 读取剪贴板并解析</button>
+    <button class="btn ghost" id="btnParse">解析输入框</button>
+    <label class="btn ghost filelabel">
+      选择文件
+      <input type="file" id="fileInput" accept=".json,.txt,application/json" hidden>
+    </label>
+    <button class="btn ghost small" id="btnPaste">粘贴</button>
+    <button class="btn ghost small" id="btnAppend">追加</button>
+  </div>
+  <div class="hint" id="importHint" style="margin-top:9px"></div>
+</section>
+
+<div id="statusBar" class="row wrap" style="margin:2px 2px 10px"></div>
+
+<nav class="tabs" id="tabBar">
+  <button data-tab="home">主世界</button>
+  <button data-tab="lab">实验室</button>
+  <button data-tab="helper">帮手</button>
+  <button data-tab="boost">加速</button>
+</nav>
+
+
+<div id="taskList"></div>
+
+<div id="emptyBox" class="empty">
+  还没有数据。<br>把游戏导出的 JSON 贴到上面，就能看到每个升级还要多久。
+</div>
+
+<!-- 设置 -->
+<div class="sheet" id="settingsSheet">
+  <div class="panel">
+    <div class="row">
+      <div class="grow"><h3>推送设置</h3></div>
+      <button class="iconbtn" id="btnCloseSettings">✕</button>
+    </div>
+    <div class="hint" style="margin-top:6px">
+      用 ntfy.sh 免费推送：手机装个 ntfy App，订阅下面这个主题名，就能收到通知。
+    </div>
+
+    <div class="field">
+      <label>ntfy 主题名（相当于密码，别用太简单的）</label>
+      <div class="row">
+        <input type="text" id="topicInput" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button class="btn ghost small" id="btnRandomTopic" style="white-space:nowrap">随机</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>服务器</label>
+      <input type="text" id="serverInput" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
+
+    <div class="field">
+      <label>提前提醒</label>
+      <div class="seg" id="leadSeg">
+        <button data-lead="0">准点</button>
+        <button data-lead="5">提前5分</button>
+        <button data-lead="10">提前10分</button>
+        <button data-lead="30">提前30分</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>加速倍率（取自游戏道具说明，改完点「重新解析上次存档」）</label>
+      <div class="row" style="gap:8px">
+        <div style="flex:1"><div class="hint">建筑工人大餐</div><input type="number" id="mult_builder_consumable" min="1" step="0.5"></div>
+        <div style="flex:1"><div class="hint">建筑工人药水</div><input type="number" id="mult_builder_potion" min="1" step="0.5"></div>
+      </div>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <div style="flex:1"><div class="hint">研究汤</div><input type="number" id="mult_research_consumable" min="1" step="0.5"></div>
+        <div style="flex:1"><div class="hint">研究药水</div><input type="number" id="mult_research_potion" min="1" step="0.5"></div>
+      </div>
+      <div class="hint" style="margin-top:10px">同一目标同时有两个加速时</div>
+      <div class="seg" id="segStack" style="margin-top:6px">
+        <button data-stack="max">取最高倍率</button>
+        <button data-stack="mul">倍率相乘</button>
+      </div>
+      <div class="hint" style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+        存档被截断、读不到加速数据时，用这里手动补（只填一次）
+      </div>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <div style="flex:1">
+          <div class="hint">还剩多少分钟</div>
+          <input type="number" id="manualBoostMin" min="0" step="1" placeholder="0 = 关闭">
+        </div>
+        <div style="flex:1">
+          <div class="hint">作用于</div>
+          <select id="manualBoostKind">
+            <option value="builder">建筑工人</option>
+            <option value="research">实验室</option>
+            <option value="pet">战宠</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:10px">助手加速是否计入完成时间</div>
+      <div class="seg" id="segHelper" style="margin-top:6px">
+        <button data-ha="0">不计入（保守）</button>
+        <button data-ha="1">计入</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px">药水/大餐到点时是否提醒</div>
+      <div class="seg" id="segNotifyBoost" style="margin-top:6px">
+        <button data-nb="1">提醒</button>
+        <button data-nb="0">不提醒</button>
+      </div>
+
+      <div class="hint" style="margin-top:10px">倒计时是否按加速折算</div>
+      <div class="seg" id="segBoost" style="margin-top:6px">
+        <button data-boost="1">折算（推荐）</button>
+        <button data-boost="0">不折算</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>任务标签（通知里显示，可留空）</label>
+      <input type="text" id="nameInput" placeholder="例如：#GYC02RC2U 主号">
+    </div>
+
+    <div class="row wrap" style="margin-top:18px">
+      <button class="btn" id="btnTest">发一条测试通知</button>
+      <button class="btn ghost small" id="btnResched">重新排程</button>
+      <button class="btn ghost small" id="btnReparse">重新解析上次存档</button>
+    </div>
+    <div class="hint" id="settingsHint" style="margin-top:10px"></div>
+
+    <div id="measureBox" style="margin-top:16px"></div>
+
+    <div id="schedLogBox" style="margin-top:16px"></div>
+
+    <div style="border-top:1px solid var(--line);margin:18px 0 0;padding-top:14px">
+      <div class="hint" style="margin-bottom:8px">清空本地数据（不影响游戏）</div>
+      <button class="btn ghost small" id="btnClear">清空并重置</button>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center;color:var(--muted);font-size:11px;padding:18px 0 8px;letter-spacing:.3px">
+  <span id="verText">村庄监工</span>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ 核心解析 ============================ */
+//==CORE-START==
+const GROUP_DEFS = [
+  { key: 'buildings',      label: '家乡 · 建筑' },
+  { key: 'traps',          label: '家乡 · 陷阱' },
+  { key: 'heroes',         label: '家乡 · 英雄' },
+  { key: 'pets',           label: '战宠' },
+  { key: 'units',          label: '实验室 · 兵种' },
+  { key: 'spells',         label: '实验室 · 法术' },
+  { key: 'siege_machines', label: '实验室 · 攻城器' },
+  { key: 'equipment',      label: '英雄装备' },
+  { key: 'helpers',        label: '帮手' },
+  { key: 'guardians',      label: '守护者' },
+  { key: 'boost',          label: '加速' },
+  { key: 'helperboost',    label: '助手协助' }
+];
+
+const UNIT_NAMES = {
+  1000000:"兵营", 1000001:"大本营", 1000002:"圣水收集器", 1000003:"圣水瓶", 1000004:"金矿", 1000005:"储金罐",
+  1000006:"训练营", 1000007:"实验室", 1000008:"加农炮", 1000009:"箭塔", 1000010:"城墙", 1000011:"法师塔",
+  1000012:"防空火箭", 1000013:"迫击炮", 1000014:"部落城堡", 1000015:"建筑工人小屋", 1000019:"特斯拉电磁塔", 1000020:"法术工厂",
+  1000021:"十字弩", 1000023:"暗黑重油钻井", 1000024:"暗黑重油罐", 1000026:"暗黑训练营", 1000027:"地狱之塔", 1000028:"空气炮",
+  1000029:"暗黑法术工厂", 1000031:"鹰火炮", 1000032:"炸弹塔", 1000033:"城墙", 1000034:"建筑大师大本营", 1000035:"圣水收集器",
+  1000036:"圣水瓶", 1000037:"金矿", 1000038:"储金罐", 1000039:"时光钟楼", 1000040:"建筑大师训练营", 1000041:"双管加农炮",
+  1000042:"兵营", 1000043:"特斯拉电磁塔", 1000044:"加农炮", 1000045:"多管迫击炮", 1000046:"星星实验室", 1000047:"B.O.T.O.小屋",
+  1000048:"箭塔", 1000049:"增援营地", 1000050:"鞭炮", 1000051:"岗哨", 1000052:"超级特斯拉", 1000053:"战争机器祭坛",
+  1000054:"空中炸弹发射器", 1000055:"粉碎机", 1000056:"烤肉架", 1000057:"巨型加农炮", 1000058:"宝石矿", 1000059:"攻城机器车间",
+  1000063:"熔岩发射器", 1000064:"B.O.B.小屋", 1000065:"B.O.B.控制台", 1000067:"投石炮", 1000068:"战宠小屋", 1000070:"铁匠铺",
+  1000071:"英雄大厅", 1000072:"法术塔", 1000077:"巨石碑", 1000078:"O.T.T.O.前哨站", 1000079:"多重机关塔", 1000080:"战斗直升机祭坛",
+  1000081:"十字弩", 1000082:"治疗小屋", 1000084:"多重箭塔", 1000085:"弹射加农炮", 1000086:"复仇之塔", 1000089:"喷火魔",
+  1000093:"帮手小屋", 1000097:"打造台", 1000102:"超级法师塔", 4000000:"野蛮人", 4000001:"弓箭手", 4000002:"哥布林",
+  4000003:"巨人", 4000004:"炸弹人", 4000005:"气球兵", 4000006:"法师", 4000007:"天使", 4000008:"飞龙",
+  4000009:"P.E.K.K.A", 4000010:"亡灵", 4000011:"野猪骑士", 4000012:"女武神", 4000013:"戈仑石人", 4000015:"女巫",
+  4000017:"熔岩猎犬", 4000022:"保龄球手", 4000023:"飞龙宝宝", 4000024:"掘地矿工", 4000031:"狂暴野蛮人", 4000032:"隐秘弓箭手",
+  4000033:"变异亡灵", 4000034:"拳击巨人", 4000035:"Bomber", 4000036:"Power P.E.K.K.A", 4000037:"加农炮战车", 4000038:"Drop Ship",
+  4000041:"飞龙宝宝", 4000042:"暗夜女巫", 4000051:"破墙战锤", 4000052:"攻城飞艇", 4000053:"大雪怪", 4000058:"Ice Golem",
+  4000059:"雷电飞龙", 4000062:"Stone Slammer", 4000065:"龙骑士", 4000070:"野猪滑翔机", 4000075:"攻城兵营", 4000082:"猎头者",
+  4000087:"滚木发射器", 4000091:"火焰投掷器", 4000092:"战斗钻机", 4000095:"雷霆泰坦", 4000097:"Apprentice Warden", 4000106:"电火法师",
+  4000109:"废墟女巫", 4000110:"根蔓骑士", 4000123:"德鲁伊", 4000132:"投掷手", 4000135:"Troop Launcher", 4000150:"熔炉",
+  4000177:"陨石戈仑", 4000188:"Sky Wagon", 12000000:"炸弹", 12000001:"弹簧陷阱", 12000002:"大炸弹", 12000005:"空中炸弹",
+  12000006:"空中地雷", 12000008:"骷髅陷阱", 12000010:"弹簧陷阱", 12000011:"推推陷阱", 12000013:"地雷", 12000014:"巨型地雷",
+  12000016:"龙卷风陷阱", 12000020:"巨型炸弹", 26000000:"闪电法术", 26000001:"治疗法术", 26000002:"狂暴法术", 26000003:"弹跳法术",
+  26000005:"冰冻法术", 26000009:"毒药法术", 26000010:"地震法术", 26000011:"急速法术", 26000016:"镜像法术", 26000017:"骷髅法术",
+  26000028:"蝙蝠法术", 26000035:"隐形法术", 26000053:"召回法术", 26000070:"蔓生法术", 26000098:"复活法术", 26000109:"冰封法术",
+  26000120:"图腾法术", 26000123:"愤怒法术", 28000000:"野蛮人之王", 28000001:"弓箭女皇", 28000002:"大守护者", 28000003:"战争机器",
+  28000004:"皇家冠军", 28000005:"战斗直升机", 28000006:"亡灵王子", 28000007:"龙公爵", 73000000:"L.A.S.S.I", 73000001:"蛮力牦牛",
+  73000002:"电猫头鹰", 73000003:"独角兽", 73000004:"凤凰", 73000007:"毒蜥蜴", 73000008:"Diggy", 73000009:"Frosty",
+  73000010:"灵狐", 73000011:"愤怒果冻", 73000016:"喷嚏", 73000017:"贪婪乌鸦", 93000000:"建筑工人学徒", 93000001:"实验室助手",
+  93000002:"勘探者", 107000000:"Longshot", 107000001:"Smasher", 107000008:"Logger",
+};
+
+const BOOST_LABELS = {
+  builder_consumable: '建筑工人大餐',
+  research_consumable: '研究大餐',
+  pet_consumable: '战宠大餐',
+  builder_potion: '建筑工人药水',
+  builder_boost: '建筑工人药水',
+  research_potion: '研究药水',
+  research_boost: '研究药水',
+  lab_boost: '研究药水',
+  pet_potion: '战宠药水',
+  pet_boost: '战宠药水',
+  hero_potion: '英雄药水',
+  power_potion: '力量药水',
+  resource_potion: '资源药水',
+  super_potion: '超级药水',
+  clocktower_cooldown: '时光钟楼冷却'
+};
+
+const ICON_BY_GROUP = {
+  buildings: '🏗️', traps: '🪤', heroes: '🦸', pets: '🐾',
+  units: '⚔️', spells: '✨', siege_machines: '🚚', equipment: '🛡️',
+  buildings2: '🏗️', traps2: '🪤', heroes2: '🦸', units2: '⚔️',
+  helpers: '🤝', guardians: '🗿', boost: '⚡', helperboost: '🧑‍🔧'
+};
+
+// 倍率取自游戏道具说明原文（clash-of-clans-data）
+//   Builder Bite  工人 2x / 1h      Study Soup      研究 4x / 1h
+//   Builder Potion 工人 10x / 1h    Research Potion 研究 24x / 1h
+//   Pet Potion     战宠 24x / 1h
+const DEFAULT_MULTS = {
+  builder_consumable: 2,
+  builder_potion: 10,
+  builder_boost: 10,
+  research_consumable: 4,
+  research_potion: 24,
+  research_boost: 24,
+  lab_boost: 24,
+  pet_consumable: 4,
+  pet_potion: 24,
+  pet_boost: 24
+};
+
+// 加速只作用一段时间：先吃掉这段时间的加速产能，剩下的按 1 倍走
+function applyBoost(baseSec, boostSec, mult) {
+  if (!(boostSec > 0) || !(mult > 1)) return baseSec;
+  const capacity = boostSec * mult;
+  if (baseSec <= capacity) return baseSec / mult;
+  return boostSec + (baseSec - capacity);
+}
+
+// 按“额外工人/加速”分段模拟完工时间
+// adds: [{ sec: 剩余秒数, add: 额外倍率(不含基础 1) }]
+function finishSeconds(W, adds) {
+  const pts = [0];
+  for (const a of adds) if (a.sec > 0 && a.sec !== Infinity) pts.push(a.sec);
+  pts.sort((x, y) => x - y);
+  let left = W, t = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const start = pts[i];
+    const end = (i + 1 < pts.length) ? pts[i + 1] : Infinity;
+    const rate = 1 + adds.filter(a => a.sec > start).reduce((s, a) => s + a.add, 0);
+    if (rate <= 0) return Infinity;
+    const span = (end === Infinity) ? (left / rate) : Math.min(end - start, left / rate);
+    left -= span * rate;
+    t += span;
+    if (left <= 1e-6) return t;
+  }
+  return t;
+}
+
+// 完整模拟：药水先跑，再按助手状态逐段推进，最后一件活没干完就按比例收尾
+function simulateFinish(W, opts) {
+  let left = W, t = 0, assist = 0;
+  const potionMult = opts.potion ? opts.potion.rate : 1;
+  const potionSec = opts.potion ? opts.potion.sec : 0;
+  const hb = opts.helper;
+
+  // 药水与助手同时生效时：速率相加（实测 10 + 9 = 19 倍）
+  if (hb && hb.sec > 0) {
+    const both = Math.min(potionSec, hb.sec);
+    if (both > 0) {
+      const rate = potionMult + (hb.rate - 1);
+      const cap = both * rate;
+      if (left <= cap) return { t: t + left / rate, assist: assist + left / rate };
+      left -= cap; t += both; assist += both;
+    }
+    const rest = hb.sec - both;
+    if (rest > 0) {
+      const rate = (potionSec > both) ? (potionMult + (hb.rate - 1)) : hb.rate;
+      const cap = rest * rate;
+      if (left <= cap) return { t: t + left / rate, assist: assist + left / rate };
+      left -= cap; t += rest; assist += rest;
+    }
+  } else if (potionSec > 0) {
+    const cap = potionSec * potionMult;
+    if (left <= cap) return { t: t + left / potionMult, assist };
+    left -= cap; t += potionSec;
+  }
+
+  if (!hb) return { t: t + left, assist };
+  if (!hb.recurrent) return { t: t + left, assist };
+
+  // 持续指派：每天 1 小时，速率 = 1 + 助手倍率
+  let cd = hb.cd;
+  for (let i = 0; i < 5000 && left > 0; i++) {
+    if (left <= cd) return { t: t + left, assist };
+    left -= cd; t += cd;
+    cd = 82800;
+    const rate = hb.rate;
+    const cap = 3600 * rate;
+    if (left <= cap) {
+      const used = left / rate;
+      return { t: t + used, assist: assist + used };
+    }
+    left -= cap; t += 3600; assist += 3600;
+  }
+  return { t: t + left, assist };
+}
+
+function boostKindOf(key) {
+  if (/builder/i.test(key)) return 'builder';
+  if (/research|lab/i.test(key)) return 'research';
+  if (/pet/i.test(key)) return 'pet';
+  return null;
+}
+
+function taskKindOf(t) {
+  if (t.group === 'buildings' || t.group === 'traps' || t.group === 'heroes') return 'builder';
+  if (t.group === 'units' || t.group === 'spells' || t.group === 'siege_machines') return 'research';
+  if (t.group === 'pets') return 'pet';
+  return null;
+}
+
+function bracketClosers(s) {
+  const stack = [];
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (c === '\\') esc = true;
+      else if (c === '"') inStr = false;
+      continue;
+    }
+    if (c === '"') { inStr = true; continue; }
+    if (c === '{' || c === '[') stack.push(c);
+    else if (c === '}' || c === ']') stack.pop();
+  }
+  let out = '';
+  for (let i = stack.length - 1; i >= 0; i--) out += (stack[i] === '{' ? '}' : ']');
+  if (inStr) out = '"' + out;
+  return out;
+}
+
+// 粘贴被截断时：丢掉断口再补齐括号，尽量把前面的数据救回来
+function parseLenient(raw) {
+  try { return { data: JSON.parse(raw), repaired: false }; } catch (e) {}
+  let s = String(raw).trim();
+  for (let i = 0; i < 300; i++) {
+    const cand = s + bracketClosers(s);
+    try { return { data: JSON.parse(cand), repaired: true }; } catch (e) {}
+    const idx = Math.max(s.lastIndexOf(','), s.lastIndexOf('{'), s.lastIndexOf('['));
+    if (idx <= 0) break;
+    s = s.slice(0, idx);
+  }
+  throw new Error('数据不完整，无法解析');
+}
+
+function parseVillage(raw, mults, boostOn, manual) {
+  const res = (typeof raw === 'string') ? parseLenient(raw) : { data: raw, repaired: false };
+  const data = res.data;
+  const repaired = res.repaired;
+  if (!data || typeof data !== 'object') throw new Error('不是有效的 JSON 对象');
+
+  const snapshotMs = Number(data.timestamp) > 0 ? Number(data.timestamp) * 1000 : Date.now();
+
+  // 帮手：workRate 就等于等级（学徒最高 8×，实验室助手最高 12×）
+  const helperRates = {};
+  for (const hh of (Array.isArray(data.helpers) ? data.helpers : [])) {
+    helperRates[Number(hh.data)] = Number(hh.lvl) || 0;
+  }
+  const APPRENTICE_RATE = helperRates[93000000] || 0;
+  const LAB_RATE = helperRates[93000001] || 0;
+  const helperCooldowns = {};
+  for (const hh of (Array.isArray(data.helpers) ? data.helpers : [])) {
+    helperCooldowns[Number(hh.data)] = Number(hh.helper_cooldown) || 0;
+  }
+  const APPRENTICE_CD = helperCooldowns[93000000] || 82800;
+  const LAB_CD = helperCooldowns[93000001] || 82800;
+  const tasks = [];
+  const seen = {};
+  let scanned = 0;
+
+  for (const def of GROUP_DEFS) {
+    const arr = data[def.key];
+    if (!Array.isArray(arr)) continue;
+    for (const entry of arr) {
+      if (!entry || typeof entry !== 'object') continue;
+      scanned++;
+      const id = Number(entry.data || entry.id || 0);
+
+      if (Number(entry.timer) > 0) {
+        const task = makeTask({
+          group: def.key, id, lvl: Number(entry.lvl) || 0,
+          remainingSec: Number(entry.timer), snapshotMs, seen
+        });
+        if (Number(entry.helper_timer) > 0) {
+          task.helperSec = Number(entry.helper_timer);
+        }
+        if (entry.helper_recurrent) task.helperRecurrent = true;
+        tasks.push(task);
+      }
+      if (Number(entry.helper_timer) > 0) {
+        const isLab = def.key === 'units' || def.key === 'spells' || def.key === 'siege_machines';
+        tasks.push(makeTask({
+          group: 'helperboost', id, lvl: Number(entry.lvl) || 0,
+          remainingSec: Number(entry.helper_timer), snapshotMs, cooldown: true,
+          name: isLab ? '实验室助手 协助中' : '建筑工人学徒 协助中'
+        }));
+      }
+      if (Number(entry.helper_cooldown) > 0) {
+        tasks.push(makeTask({
+          group: def.key, id, lvl: Number(entry.lvl) || 0,
+          remainingSec: Number(entry.helper_cooldown), snapshotMs, cooldown: true, seen
+        }));
+      }
+    }
+  }
+
+  // 加速 / 药水 / 冷却：在整个存档里找形如 *_potion / *_consumable / *_cooldown 的秒数
+  const BOOST_KEY_RE = /(potion|consumable|boost|cooldown|_left|_remaining|_timer)/i;
+  const SKIP_KEYS = { timer: 1, helper_cooldown: 1, timestamp: 1, clocktower_cooldown: 1, clocktower_boost: 1 };
+  const SKIP_KEY_RE = /clocktower|clock_tower/i;
+  const usedPaths = {};
+  (function scanBoosts(node, path) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+    for (const key of Object.keys(node)) {
+      const val = node[key];
+      if (val && typeof val === 'object') { scanBoosts(val, path ? path + '.' + key : key); continue; }
+      if (SKIP_KEYS[key] || SKIP_KEY_RE.test(key)) continue;
+      if (!BOOST_KEY_RE.test(key)) continue;
+      const sec = Number(val);
+      if (!(sec > 0)) continue;
+      const id = (path ? path + '.' : '') + key;
+      usedPaths[id] = 1;
+      tasks.push(makeTask({
+        group: 'boost', id, lvl: 0,
+        remainingSec: sec, snapshotMs, cooldown: true,
+        name: BOOST_LABELS[key] || key.replace(/_/g, ' ')
+      }));
+    }
+  })(data, '');
+
+  // 兜底：字段名不认识，但值明显是“秒”的（1分钟 ~ 30天），也先列出来，方便排查
+  const IGNORE_KEYS = { data: 1, id: 1, lvl: 1, cnt: 1, timestamp: 1, tag: 1 };
+  (function scanUnknown(node, path) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) return;
+    for (const key of Object.keys(node)) {
+      const val = node[key];
+      if (val && typeof val === 'object') { scanUnknown(val, path ? path + '.' + key : key); continue; }
+      if (IGNORE_KEYS[key] || SKIP_KEYS[key]) continue;
+      const sec = Number(val);
+      if (!(sec >= 60 && sec <= 2592000)) continue;
+      const id = (path ? path + '.' : '') + key;
+      if (usedPaths[id]) continue;
+      usedPaths[id] = 1;
+      tasks.push(makeTask({
+        group: 'boost', id, lvl: 0,
+        remainingSec: sec, snapshotMs, cooldown: true,
+        name: '待确认计时：' + key
+      }));
+    }
+  })(data, '');
+
+  // 把生效中的加速折算进倒计时
+  const M = Object.assign({}, DEFAULT_MULTS, mults || {});
+  const BOOST_ON = boostOn !== false;
+  const MODE = (mults && mults.__mode === 'mul') ? 'mul' : 'max';
+  const active = [];
+  for (const t of tasks) {
+    if (t.group !== 'boost') continue;
+    const key = String(t.id).split('.').pop();
+    const kind = boostKindOf(key);
+    let m = Number(M[key]);
+    if (!(m > 1) && kind) {
+      // 没登记的字段名：药水按 10/24，点心(consumable/snack)按 2/4
+      const isSnack = /consumable|snack/i.test(key);
+      if (kind === 'builder') m = isSnack ? 2 : 10;
+      else if (kind === 'research') m = isSnack ? 4 : 24;
+      else m = isSnack ? 2 : 24;
+    }
+    if (BOOST_ON && kind && m > 1 && t.remainingSec > 0) {
+      active.push({ kind, sec: t.remainingSec, mult: m, name: t.name });
+    }
+  }
+  // 存档被截断、读不到 boosts 时，用设置里手动填的“还剩多少分钟”兜底
+  if (BOOST_ON && manual && Number(manual.min) > 0 && manual.kind) {
+    if (!active.some(b => b.kind === manual.kind)) {
+      const map = { builder: 'builder_potion', research: 'research_potion', pet: 'pet_potion' };
+      const key = map[manual.kind];
+      const m = Number(M[key]) || 2;
+      active.push({ kind: manual.kind, sec: Number(manual.min) * 60, mult: m, name: '手动补的加速' });
+    }
+  }
+
+  // 同一目标同时有多个加速时：默认只取最高倍率（游戏通常不允许同类加速共存）
+  const byKind = {};
+  for (const b of active) (byKind[b.kind] = byKind[b.kind] || []).push(b);
+  for (const kind of Object.keys(byKind)) {
+    const list = byKind[kind].sort((x, y) => y.mult - x.mult);
+    if (MODE === 'mul' && list.length > 1) {
+      byKind[kind] = {
+        mult: list.reduce((acc, x) => acc * x.mult, 1),
+        sec: Math.min.apply(null, list.map(x => x.sec)),
+        count: list.length
+      };
+    } else {
+      byKind[kind] = { mult: list[0].mult, sec: list[0].sec, count: list.length };
+    }
+  }
+  for (const t of tasks) {
+    if (t.group === 'boost' || t.group === 'helperboost' || t.cooldown) continue;
+    const kind = taskKindOf(t);
+    if (!kind) continue;
+    const b = byKind[kind];
+    const base = t.remainingSec;
+    const hRate = (mults && mults.__helper === false) ? 0
+      : (kind === 'builder' ? APPRENTICE_RATE : (kind === 'research' ? LAB_RATE : 0));
+    const helperOpt = (hRate > 0 && (t.helperSec > 0 || t.helperRecurrent)) ? {
+      sec: t.helperSec > 0 ? t.helperSec : 0,
+      rate: 1 + hRate,
+      recurrent: !!t.helperRecurrent,
+      cd: kind === 'builder' ? APPRENTICE_CD : LAB_CD
+    } : null;
+    if (!b && !helperOpt) continue;
+    const sim = simulateFinish(base, {
+      potion: b ? { sec: b.sec, rate: b.mult } : null,
+      helper: helperOpt
+    });
+    const eff = sim.t;
+    const helperRate = helperOpt ? hRate : 0;
+    const helperSessions = sim.assist > 0 ? sim.assist / 3600 : 0;
+    if (!isFinite(eff)) continue;
+    t.baseSec = base;
+    t.helperRate = helperRate;
+    t.helperSessions = helperSessions;
+    if (b) {
+      t.boostMult = b.mult;
+      t.boostName = b.name;
+      t.boostCount = b.count || 1;
+      t.boostEndMs = snapshotMs + b.sec * 1000;
+    }
+    t.remainingSec = eff;
+    t.finishMs = t.finishMs - (base - eff) * 1000;
+  }
+
+  tasks.sort((a, b) => a.finishMs - b.finishMs);
+
+  return {
+    tag: String(data.tag || ''),
+    snapshotMs,
+    scanned,
+    tasks,
+    repaired
+  };
+}
+
+function makeTask(o) {
+  const finishMs = o.snapshotMs + o.remainingSec * 1000;
+  // 同一种建筑可能有多个同时在升，用序号保证 key 唯一
+  const base = `${o.group}:${o.id}:${o.lvl}:${o.cooldown ? 'cd' : 'up'}`;
+  const seen = o.seen || {};
+  seen[base] = (seen[base] || 0) + 1;
+  const key = seen[base] > 1 ? `${base}#${seen[base]}` : base;
+  return {
+    key,
+    name: o.name || '',
+    group: o.group,
+    groupLabel: (GROUP_DEFS.find(g => g.key === o.group) || {}).label || o.group,
+    icon: ICON_BY_GROUP[o.group] || '🏗️',
+    id: o.id,
+    lvl: o.lvl,
+    cooldown: !!o.cooldown,
+    remainingSec: o.remainingSec,
+    rawSec: o.remainingSec,
+    initialSec: o.remainingSec,
+    finishMs
+  };
+}
+
+/* 时间格式化 */
+function fmtRemain(ms) {
+  if (ms <= 0) return '已完成';
+  const s = Math.round(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (d > 0) return `${d}天${h}小时`;
+  if (h > 0) return `${h}小时${m}分`;
+  if (m > 0) return `${m}分${String(sec).padStart(2, '0')}秒`;
+  return `${sec}秒`;
+}
+
+function fmtClock(ms, nowMs) {
+  const d = new Date(ms);
+  const n = new Date(nowMs === undefined ? Date.now() : nowMs);
+  const pad = x => String(x).padStart(2, '0');
+  const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const startOfDay = x => { const t = new Date(x); t.setHours(0, 0, 0, 0); return t.getTime(); };
+  const diff = Math.round((startOfDay(ms) - startOfDay(n.getTime())) / 86400000);
+  if (diff === 0) return `今天 ${hm}`;
+  if (diff === 1) return `明天 ${hm}`;
+  if (diff < 0) return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hm}`;
+  const wd = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+  const todayIdx = (n.getDay() + 6) % 7;           // 周一 = 0
+  const week = Math.floor((todayIdx + diff) / 7);   // 0=这周 1=下周 2=下下周
+  const prefix = week === 0 ? '这' : week === 1 ? '下' : week === 2 ? '下下' : `${week}周后的`;
+  return `${prefix}${wd} ${hm}`;
+}
+//==CORE-END==
+
+/* ============================ 应用层 ============================ */
+const APP_VERSION = 'v64';
+const BUILD_DATE = '2026-11-02';
+
+const LS = {
+  snapshot: 'coc.snapshot.v2',
+  config:   'coc.config.v2',
+  names:    'coc.names.v2',
+  sched:    'coc.sched.v2',
+  prev:     'coc.prev.v1',
+  retry:    'coc.retry.v1',
+  log:      'coc.log.v1',
+  lastRun:  'coc.lastrun.v1',
+  tab:      'coc.tab.v1'
+};
+const MAX_DELAY_MS = 3 * 86400000 - 120000; // ntfy 最多 3 天
+const MIN_DELAY_MS = 12000;
+
+const $ = id => document.getElementById(id);
+let state = {
+  snapshot: load(LS.snapshot, null),
+  config: Object.assign({
+    topic: 'coc-' + Math.random().toString(36).slice(2, 10),
+    server: 'https://ntfy.sh',
+    lead: 0,
+    label: '',
+    mults: Object.assign({}, DEFAULT_MULTS),
+    boost: true,
+    notifyBoost: true,
+    helperAssist: true,
+    stackMode: 'max',
+    manualBoost: { min: 0, kind: 'builder' }
+  }, load(LS.config, {})),
+  names: load(LS.names, {}),
+  scheduled: load(LS.sched, []),
+  prev: load(LS.prev, null),
+  schedLog: load(LS.log, []),
+  lastRun: load(LS.lastRun, null),
+  tab: load(LS.tab, 'home'),
+  measure: []
+};
+save(LS.config, state.config);
+
+// 上次被限速、排程没跑完：到点自动补一次
+(function replayRetry() {
+  const at = Number(load(LS.retry, 0)) || 0;
+  if (!at) return;
+  const wait = Math.max(2000, at - Date.now());
+  setTimeout(() => { try { scheduleAll(true); } catch (e) {} }, wait);
+})();
+
+// 旧版本存的数据没有原始 JSON，升级后自动重解析一次，避免看不到新字段
+let NEED_RESCHED = false;
+let RESCHED_TIMER = null;
+
+function migrateSnapshot() {
+  const s = state.snapshot;
+  if (!s || !s.raw || s.v === APP_VERSION) return;
+  NEED_RESCHED = true;
+  try {
+    const mset = Object.assign({ __mode: state.config.stackMode || 'max', __helper: state.config.helperAssist === true }, state.config.mults);
+    const p = parseVillage(s.raw, mset, state.config.boost !== false, state.config.manualBoost);
+    state.snapshot = {
+      tag: p.tag, snapshotMs: p.snapshotMs, scanned: p.scanned,
+      tasks: p.tasks, raw: s.raw, v: APP_VERSION
+    };
+    save(LS.snapshot, state.snapshot);
+  } catch (e) {}
+}
+migrateSnapshot();
+
+function allTasks() {
+  const fromSnap = (state.snapshot && state.snapshot.tasks) ? state.snapshot.tasks : [];
+  return fromSnap.slice().sort((a, b) => a.finishMs - b.finishMs);
+}
+
+function load(k, d) {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; }
+}
+function save(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {}
+}
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+const TAB_EMPTY = {
+  home: '主世界没有正在升级的项目',
+  lab: '战宠、兵种、法术都没有在升级',
+  helper: '帮手小屋没有在冷却的助手',
+  boost: '没有正在生效的加速或助手协助'
+};
+
+function inTab(tab, t) {
+  if (tab === 'home') return t.group === 'buildings' || t.group === 'traps' || t.group === 'heroes';
+  if (tab === 'lab') return t.group === 'pets' || t.group === 'units' || t.group === 'spells'
+    || t.group === 'siege_machines' || t.group === 'equipment';
+  if (tab === 'helper') return (t.group === 'helpers' || t.group === 'guardians') && t.cooldown;
+  return t.group === 'boost' || t.group === 'helperboost';
+}
+
+/* ---------- 渲染 ---------- */
+function render() {
+  const now = Date.now();
+  const snap = state.snapshot;
+  const list = $('taskList');
+  const empty = $('emptyBox');
+  const status = $('statusBar');
+  const tab = state.tab || 'home';
+
+  document.querySelectorAll('#tabBar button').forEach(b => {
+    b.classList.toggle('on', b.dataset.tab === tab);
+  });
+
+  const tasks = allTasks();
+  const cur = tasks.filter(t => inTab(tab, t));
+
+  // 实测速率（只在设置面板里显示，避免主界面乱）
+  const mbox = $('measureBox');
+  if (mbox) {
+    if (state.measure && state.measure.length) {
+      const rows = state.measure
+        .filter(m => m.rate > 0.2)
+        .sort((a, b) => b.rate - a.rate)
+        .slice(0, 6)
+        .map(m => `<div class="hint">${escapeHtml(m.name)}：实测 <b style="color:var(--accent)">${m.rate.toFixed(2)}×</b>（${m.dt} 秒里减少 ${m.db} 秒）</div>`)
+        .join('');
+      const top = state.measure.slice().sort((a, b) => b.rate - a.rate)[0];
+      const prevTasks = (state.prev && state.prev.tasks) ? state.prev.tasks : [];
+      const curTasks = (state.snapshot && state.snapshot.tasks) ? state.snapshot.tasks : [];
+      const hadBoost = prevTasks.some(x => String(x.key || '').indexOf('boost:') === 0)
+        || curTasks.some(x => x.group === 'boost');
+      const note = !top ? '' : (top.rate < 1.4
+        ? (hadBoost
+            ? '⚠️ 这段有加速在生效却只测到 1.0×：说明存档已算过加速，应把「折算」关掉'
+            : '这次比对期间没有加速在生效，1.0× 是正常的（不代表存档已含加速）')
+        : `有加速在生效，实测约 ${top.rate.toFixed(1)}×：存档给的是未加速的工作量，折算保持开启`);
+      const sendInfo = window.__lastSend ? `<div class="hint" style="margin-top:8px;color:var(--warn)">上次发送：${window.__lastSend.status ? 'HTTP ' + window.__lastSend.status : '无响应'}（${window.__lastSend.stage || ''}）${window.__lastSend.error ? ' ' + window.__lastSend.error : ''}</div>` : '';
+      mbox.innerHTML = `<div style="border-top:1px solid var(--line);padding-top:14px"><h2>📐 实测速率（两次存档对比）</h2>${rows}<div class="hint" style="margin-top:8px;color:var(--muted)">${note}</div>${sendInfo}</div>`;
+    } else {
+      mbox.innerHTML = '';
+    }
+  }
+
+  // 排程日志（设置面板里）
+  const sbox = $('schedLogBox');
+  if (sbox) {
+    const lr = state.lastRun;
+    if (!lr) {
+      sbox.innerHTML = '';
+    } else {
+      const listOf = (arr, fmt) => (arr && arr.length) ? arr.map(fmt).join('、') : '无';
+      const kept = listOf(lr.keptNames, x => escapeHtml(x));
+      const added = listOf(lr.addedNames, x => escapeHtml(x));
+      const canceled = listOf(lr.canceledNames, x => escapeHtml(x));
+      const rows = (state.schedLog && state.schedLog.length)
+        ? state.schedLog.slice().reverse().slice(0, 20).map(x => {
+            const tm = new Date(x.t);
+            const hh = String(tm.getHours()).padStart(2, '0') + ':' + String(tm.getMinutes()).padStart(2, '0');
+            const tag = x.ok ? '✅' : (x.limited ? '⛔ 限速' : '❌ 失败');
+            return `<div class="hint">${hh} ${escapeHtml(x.name)} → ${fmtClock(x.at, Date.now())} ${tag}</div>`;
+          }).join('')
+        : '';
+      sbox.innerHTML =
+        '<h2>🧾 本次排程记录</h2>' +
+        `<div class="hint" style="margin-top:6px">🟢 保留：${lr.kept || 0} 条</div><div class="hint" style="color:var(--muted);padding-left:18px">${kept}</div>` +
+        `<div class="hint" style="margin-top:6px">🔵 新增：${lr.sent || 0} 条</div><div class="hint" style="color:var(--muted);padding-left:18px">${added}</div>` +
+        `<div class="hint" style="margin-top:6px">🔴 撤回：${lr.canceled || 0} 条</div><div class="hint" style="color:var(--muted);padding-left:18px">${canceled}</div>` +
+        (lr.fail ? `<div class="hint" style="color:var(--warn)">撤回失败 ${lr.fail} 条</div>` : '') +
+        rows;
+    }
+  }
+
+  // 状态栏
+  let ageTxt = '';
+  if (snap && snap.snapshotMs) {
+    const ageMin = Math.floor((now - snap.snapshotMs) / 60000);
+    ageTxt = ageMin < 1 ? '刚刚' : ageMin < 60 ? `${ageMin} 分钟前`
+      : ageMin < 1440 ? `${Math.floor(ageMin / 60)} 小时前` : `${Math.floor(ageMin / 1440)} 天前`;
+  }
+  const active = tasks.filter(t => t.finishMs > now);
+  status.innerHTML =
+    (snap && snap.tag ? `<span class="pill blue">${escapeHtml(snap.tag)}</span>` : '') +
+    (ageTxt ? `<span class="pill">快照 ${ageTxt}</span>` : '') +
+    `<span class="pill ${active.length ? 'ok' : ''}">${active.length} 项进行中</span>` +
+    (snap && snap.v !== APP_VERSION ? '<span class="pill warn">旧数据，请重新导入</span>' : '');
+
+  if (!cur.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    empty.textContent = TAB_EMPTY[tab] || '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const curActive = cur.filter(t => t.finishMs > now);
+  const curDone = cur.filter(t => t.finishMs <= now);
+  let html = '';
+
+  if (tab === 'helper') {
+    html += curActive.map(t => taskHtml(t, now, false)).join('');
+  } else {
+    html += curActive.map(t => taskHtml(t, now, false)).join('');
+    if (!curActive.length) html += `<div class="empty">${TAB_EMPTY[tab] || ''}</div>`;
+  }
+
+  if (curDone.length) {
+    html += '<h2 style="margin:18px 2px 8px">已完成 / 待确认</h2>';
+    html += curDone.map(t => taskHtml(t, now, true)).join('');
+  }
+  list.innerHTML = html;
+
+  list.querySelectorAll('[data-act="rename"]').forEach(el => {
+    el.addEventListener('click', () => renameTask(el.dataset.key));
+  });
+  list.querySelectorAll('[data-act="dismiss"]').forEach(el => {
+    el.addEventListener('click', () => dismissTask(el.dataset.key));
+  });
+}
+// 把排程的 key（buildings:1000019:16:up）转成可读名字，用于撤回列表
+function prettyKey(key) {
+  const parts = String(key || '').split(':');
+  if (parts[0] === 'boost' || parts[0] === 'helperboost') {
+    const k = (parts[1] || '').split('.').pop();
+    return BOOST_LABELS[k] || k;
+  }
+  const id = Number(parts[1]);
+  if (UNIT_NAMES[id]) return UNIT_NAMES[id];
+  return '编号 ' + id;
+}
+
+function displayName(t) {
+  if (t.name) return t.name;
+  const custom = state.names[t.id];
+  if (custom) return custom;
+  if (t.id >= 90000000 && t.id < 91000000) return '英雄装备';
+  const known = UNIT_NAMES[t.id];
+  if (known) return known;
+  return '编号 ' + t.id;
+}
+
+function taskHtml(t, now, isDone) {
+  const remain = t.finishMs - now;
+  const remainTxt = isDone ? '已到时间' : fmtRemain(remain);
+  const soon = !isDone && remain < 15 * 60000;
+  const pct = Math.max(0, Math.min(100, isDone ? 100
+    : 100 * (1 - remain / (t.initialSec * 1000))));
+  const name = escapeHtml(displayName(t));
+  const lvTxt = t.lvl ? `<span class="lv">Lv${t.lvl}${t.cooldown ? ' · 冷却' : ' → ' + (t.lvl + 1)}</span>` : '';
+  const isScheduled = state.scheduled.some(s => s && s.key === t.key && s.topic === state.config.topic);
+  const noSchedulePill = (t.group === 'helpers' || t.group === 'helperboost' || t.group === 'boost');
+  const schedTag = (isDone || noSchedulePill) ? '' :
+    (t.finishMs - now > MAX_DELAY_MS
+      ? `<span class="pill warn">长任务 · 3天后先提醒刷新</span>`
+      : isScheduled
+        ? `<span class="pill ok">已排程</span>`
+        : `<span class="pill">待排程</span>`);
+
+  const boostParts = [];
+  if (t.boostMult) boostParts.push(t.boostMult + '× 加速');
+  if (t.helperSessions > 0) {
+    const isLabTask = t.group === 'units' || t.group === 'spells' || t.group === 'siege_machines';
+    boostParts.push(isLabTask
+      ? '实验室助手 ' + t.helperSessions.toFixed(2) + '次'
+      : '学徒 ' + t.helperRate + '倍速');
+  }
+  const boostTip = (!t.baseSec || isDone || !boostParts.length) ? ''
+    : `<div class="fin" style="color:var(--accent)">${boostParts.join(' · ')} · 原本 ${fmtRemain(t.baseSec * 1000)}</div>`;
+
+  return `<div class="task ${isDone ? 'done' : ''} ${soon ? 'soon' : ''}">
+    <div class="top">
+      <div class="grow">
+        <div class="cat">${t.icon} ${escapeHtml(t.groupLabel)}</div>
+        <div class="name" data-act="rename" data-key="${escapeHtml(t.key)}" title="点我改名">${name}${lvTxt}</div>
+      </div>
+      <div>
+        <div class="time ${isDone ? 'small' : ''}">${remainTxt}</div>
+        <div class="fin">${isDone ? fmtClock(t.finishMs, now) + ' 完成' : '预计 ' + fmtClock(t.finishMs, now)}</div>
+        ${boostTip}
+      </div>
+    </div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div class="foot">
+      ${schedTag}
+      <div class="grow"></div>
+      ${isDone ? `<button class="pill" data-act="dismiss" data-key="${escapeHtml(t.key)}">知道了</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/* ---------- 交互 ---------- */
+function renameTask(key) {
+  const t = allTasks().find(x => x.key === key);
+  if (!t) return;
+  const cur = displayName(t);
+  const v = prompt('给这条起个名字（比如「加农炮 2号工人」）', cur === `#${t.id}` ? '' : cur);
+  if (v === null) return;
+  const name = v.trim();
+  if (name) {
+    state.names[t.id] = name;
+    save(LS.names, state.names);
+  } else {
+    delete state.names[t.id];
+    save(LS.names, state.names);
+  }
+  render();
+}
+
+function dismissTask(key) {
+  if (state.snapshot && state.snapshot.tasks) {
+    state.snapshot.tasks = state.snapshot.tasks.filter(x => x.key !== key);
+    save(LS.snapshot, state.snapshot);
+  }
+  render();
+}
+
+function doParse(text, force) {
+  // 手动导入优先，取消还没跑的自动重排
+  if (RESCHED_TIMER) { clearTimeout(RESCHED_TIMER); RESCHED_TIMER = null; }
+  if (!text || !text.trim()) { toast('先粘贴 JSON'); return; }
+  let parsed;
+  try {
+    const mset = Object.assign({ __mode: state.config.stackMode || 'max', __helper: state.config.helperAssist === true }, state.config.mults);
+    parsed = parseVillage(text, mset, state.config.boost !== false, state.config.manualBoost);
+  } catch (e) {
+    const len = String(text).length;
+    const broken = /Unterminated|Unexpected end|end of JSON input/i.test(e.message);
+    $('importHint').style.whiteSpace = 'pre-line';
+    $('importHint').textContent = broken
+      ? `解析失败：数据在 ${len.toLocaleString()} 字符处断了，说明复制时没复制全。
+办法：先贴前半段 → 点「追加」→ 再贴后半段 → 再点「解析并排程」。`
+      : '解析失败：' + e.message;
+    $('importHint').style.color = 'var(--warn)';
+    toast(broken ? '内容不完整，请分段粘贴' : 'JSON 解析失败');
+    return;
+  }
+  // 用上一份存档做实测：deltaTimer / deltaTimestamp = 真实倍率
+  state.measure = [];
+  const prev = state.prev;
+  if (prev && prev.snapshotMs && parsed.snapshotMs > prev.snapshotMs) {
+    const dt = (parsed.snapshotMs - prev.snapshotMs) / 1000;
+    if (dt >= 20) {
+      const map = {};
+      for (const p of prev.tasks) map[p.key] = p;
+      for (const t of parsed.tasks) {
+        const q = map[t.rawKey || t.key];
+        if (!q) continue;
+        const db = q.rawSec - (t.rawSec !== undefined ? t.rawSec : t.remainingSec);
+        if (db <= 0) continue;
+        state.measure.push({ name: displayName(t), label: t.groupLabel, rate: db / dt, dt, db });
+      }
+    }
+  }
+  state._sameSnap = !!(prev && prev.snapshotMs === parsed.snapshotMs);
+  state.prev = {
+    snapshotMs: parsed.snapshotMs,
+    tasks: parsed.tasks.map(t => ({ key: t.key, rawKey: t.rawKey, rawSec: t.rawSec !== undefined ? t.rawSec : t.remainingSec }))
+  };
+  save(LS.prev, state.prev);
+
+  const upCount = parsed.tasks.filter(t => t.group !== 'boost').length;
+  const boostCount = parsed.tasks.length - upCount;
+  const hasBoosts = parsed.tasks.some(t => t.group === 'boost');
+  let extra = '';
+  if (boostCount === 0) {
+    try {
+      const d = JSON.parse(text);
+      const objs = Object.keys(d).filter(k => d[k] && typeof d[k] === 'object' && !Array.isArray(d[k]));
+      const nums = Object.keys(d).filter(k => typeof d[k] === 'number');
+      extra = '（顶层对象字段：' + (objs.join('、') || '无') +
+        '；顶层数字字段：' + (nums.join('、') || '无') + '）';
+    } catch (e) {}
+  }
+  $('importHint').textContent =
+    (parsed.repaired ? '⚠️ 数据不完整，已按断口前的部分解析。\n' : '') +
+    `解析成功：${parsed.scanned} 条数据 · ${upCount} 项升级 · ${boostCount} 个加速/药水` +
+    (boostCount === 0 ? '｜没找到加速字段' + extra : '');
+  $('importHint').style.color = boostCount === 0 ? 'var(--warn)' : 'var(--ok)';
+  state.snapshot = {
+    tag: parsed.tag,
+    snapshotMs: parsed.snapshotMs,
+    scanned: parsed.scanned,
+    tasks: parsed.tasks,
+    raw: String(text).slice(0, 1000000),
+    repaired: !!parsed.repaired,
+    v: APP_VERSION
+  };
+  save(LS.snapshot, state.snapshot);
+  $('jsonInput').value = '';
+  $('charCount').textContent = '';
+  render();
+  scheduleAll(force);
+}
+
+/* ---------- 推送 ---------- */
+function pushUrl(opts) {
+  const srv = (state.config.server || 'https://ntfy.sh').replace(/\/+$/, '');
+  const topic = encodeURIComponent(state.config.topic);
+  const p = new URLSearchParams();
+  if (opts.message) p.set('message', opts.message);
+  if (opts.title) p.set('title', opts.title);
+  if (opts.tags) p.set('tags', opts.tags);
+  if (opts.priority) p.set('priority', String(opts.priority));
+  if (opts.at) p.set('at', String(Math.floor(opts.at / 1000)));
+  return `${srv}/${topic}/publish?${p.toString()}`;
+}
+
+async function send(opts) {
+  // APK 里：不联网，直接把闹钟交给安卓
+  if (window.AndroidAlarm && typeof AndroidAlarm.set === 'function') {
+    const at = opts.at ? opts.at : (Date.now() + 3000);
+    const key = opts.key || ('m' + at);
+    try { AndroidAlarm.set(key, at, opts.title || '村庄监工', opts.message || ''); return { ok: true, id: key, status: 200 }; }
+    catch (e) { return { ok: false, id: '', status: 0 }; }
+  }
+  const url = pushUrl(opts);
+  try {
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+    if (res && res.ok) {
+      let id = '';
+      try { const j = await res.json(); id = (j && j.id) || ''; } catch (e) {}
+      return { ok: true, id, status: res.status };
+    }
+    // 非 2xx：直接算失败（429 就是被限速，no-cors 重发也没用）
+    window.__lastSend = { url, status: res ? res.status : 0, stage: 'cors' };
+    return { ok: false, id: '', status: res ? res.status : 0 };
+  } catch (e) {
+    // 被 CORS 拦下时退回 no-cors：消息照样发，只是拿不到 id
+    window.__lastSend = { url, error: (e && e.message) || String(e), stage: 'cors-throw' };
+    try {
+      await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'no-store' });
+      return { ok: true, id: '', status: 0, fallback: true };
+    } catch (e2) {
+      window.__lastSend = { url, error: (e2 && e2.message) || String(e2), stage: 'no-cors-throw' };
+      return { ok: false, id: '', status: 0 };
+    }
+  }
+}
+
+// 撤回一条已排程的消息（同一主题下）
+async function cancelMessage(id) {
+  if (!id) return false;
+  if (window.AndroidAlarm && typeof AndroidAlarm.cancel === 'function') {
+    try { AndroidAlarm.cancel(String(id)); return true; } catch (e) { return false; }
+  }
+  const srv = (state.config.server || 'https://ntfy.sh').replace(/\/+$/, '');
+  try {
+    await fetch(`${srv}/${encodeURIComponent(state.config.topic)}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function alreadyScheduled(task, at) {
+  const topic = state.config.topic;
+  return state.scheduled.some(s => s && s.key === task.key && s.topic === topic && Math.abs(s.at - at) < 10 * 60000);
+}
+
+function pruneScheduled(now) {
+  state.scheduled = state.scheduled.filter(x => x && typeof x === 'object' && x.at > now - 3600000);
+}
+
+async function scheduleAll(force) {
+  const tasks = allTasks();
+  if (!tasks.length) return { sent: 0, longOnes: 0 };
+  if (!state.config.topic) return { sent: 0, longOnes: 0 };
+  // 同一份存档重复导入，不再重排（否则药水结束时会被刷屏）
+  if (!force && state._sameSnap) {
+    const hint0 = $('settingsHint');
+    if (hint0) hint0.textContent = '这份存档和上次一样，没有重复排程。';
+    return { sent: 0, longOnes: 0 };
+  }
+
+  const now = Date.now();
+  pruneScheduled(now);
+
+  // 以最新 JSON 为准，但只处理“变化的部分”：
+  //   - 任务还在、时间没变 -> 保留原排程，不动（省请求，避免被 ntfy 限速）
+  //   - 任务时间变了       -> 撤回旧的重排
+  //   - 任务已经不存在     -> 撤回
+  const partial = !!(state.snapshot && state.snapshot.repaired);
+  let cancelFail = 0, canceled = 0;
+  const desired = {};
+
+  const prevRun = state.lastRun || null;
+  state.schedLog = [];
+  let sent = 0, longOnes = 0, limited = false;
+
+  // 1) 先算出每条任务的目标时间
+  const plan = [];
+  for (const t of tasks) {
+    if (t.finishMs <= now + 2000) continue;
+    if (t.group === 'boost') continue;   // 加速只看不提醒
+    if (t.group === 'helperboost' || t.group === 'helpers') continue;   // 帮手相关只看不提醒
+
+    let at = t.finishMs - (state.config.lead || 0) * 60000;
+    let isLong = false;
+    if (at - now > MAX_DELAY_MS) { at = now + MAX_DELAY_MS; isLong = true; longOnes++; }
+    if (at - now < MIN_DELAY_MS) at = now + MIN_DELAY_MS;
+    plan.push({ t, at, isLong });
+  }
+
+  // 主世界（建筑/陷阱/英雄）只排最早完成的 2 个
+  const HOME_GROUPS = ['buildings', 'traps', 'heroes'];
+  const homePlan = plan.filter(x => HOME_GROUPS.indexOf(x.t.group) >= 0).sort((a, b) => a.at - b.at);
+  const allowedHome = {};
+  homePlan.slice(0, 2).forEach(x => { allowedHome[x.t.key] = 1; });
+  const planFinal = plan.filter(x => HOME_GROUPS.indexOf(x.t.group) < 0 || allowedHome[x.t.key]);
+
+  // 2) 和已有排程对齐：没变的保留，变了/消失的撤回
+  const existing = state.scheduled.filter(s => s && s.topic === state.config.topic && s.at > now);
+  const byKey = {};
+  for (const s of existing) (byKey[s.key] = byKey[s.key] || []).push(s);
+
+  const keep = [];
+  const todo = [];
+  const keptNames = [], canceledNames = [];
+  for (const p of planFinal) {
+    const olds = byKey[p.t.key] || [];
+    const same = olds.find(s => Math.abs(s.at - p.at) < 10 * 60000);
+    if (same) {
+      keep.push(same);
+      keptNames.push(same.name || displayName(p.t));
+      byKey[p.t.key] = olds.filter(s => s !== same);
+    } else {
+      todo.push(p);
+    }
+  }
+
+  if (!partial) {
+    for (const key of Object.keys(byKey)) {
+      for (const s of byKey[key]) {
+        const ok = await cancelMessage(s.id);
+        if (ok) { canceled++; canceledNames.push(s.name || prettyKey(s.key)); } else cancelFail++;
+      }
+    }
+  }
+  const keptCount = keep.length;
+  state.scheduled = keep;
+
+  // 3) 只给新增/时间变了的任务发排程
+  for (const p of todo) {
+    const t = p.t, at = p.at, isLong = p.isLong;
+    const note = isLong
+      ? `还要约 ${fmtRemain(t.finishMs - now)}，打开「村庄监工」重新导入一次，就能续上精确提醒`
+      : '升级完成，可以上线了';
+    const title = isLong
+      ? `⏳ ${displayName(t)} 还没好，记得刷新排程`
+      : t.cooldown
+        ? (t.group === 'boost' ? `⏰ ${displayName(t)} 已结束` : `⏰ ${displayName(t)} 冷却结束`)
+        : `✅ ${displayName(t)}${t.lvl ? ' Lv' + t.lvl + '→' + (t.lvl + 1) : ''} 完成`;
+    const body = isLong
+      ? `${displayName(t)} 剩余约 ${fmtRemain(t.finishMs - now)}。\n${note}`
+      : t.group === 'boost'
+        ? `${displayName(t)} 的加速效果已经结束`
+        : `${t.groupLabel}${t.lvl && !t.cooldown ? ' · 升到 Lv' + (t.lvl + 1) : ''} · ${note}`;
+
+    const payload = {
+      title, message: body + '\n（' + APP_VERSION + '）',
+      tags: isLong ? 'hourglass' : 'tada,castle',
+      priority: isLong ? 3 : 4,
+      at
+    };
+    let r = await send(payload);
+    if (r && r.status === 429) {
+      limited = true;
+      break;   // 被限速就整轮停下，继续试只会把额度越耗越光
+    }
+    if (r && r.ok) {
+      state.scheduled.push({ key: t.key, at, topic: state.config.topic, id: r.id || '', name: displayName(t) });
+      sent++;
+    }
+    state.schedLog.push({ t: Date.now(), name: displayName(t), at, ok: !!(r && r.ok),
+      limited: !!(r && r.status === 429), status: (r && r.status) || 0, id: (r && r.id) || '' });
+    if (state.schedLog.length > 20) state.schedLog = state.schedLog.slice(-20);
+    await new Promise(x => setTimeout(x, 120));
+  }
+
+  state.lastRun = {
+    sent, fail: cancelFail, kept: keptCount, canceled,
+    keptNames: keptNames.slice(0, 15),
+    addedNames: todo.filter(x => state.scheduled.some(s => s.key === x.t.key)).map(x => displayName(x.t) + ' → ' + fmtClock(x.at, Date.now())).slice(0, 15),
+    canceledNames: canceledNames.slice(0, 15),
+    at: Date.now()
+  };
+  save(LS.sched, state.scheduled);
+  save(LS.log, state.schedLog);
+  save(LS.lastRun, state.lastRun);
+  render();
+  const hint = $('settingsHint');
+  if (hint) {
+    if (limited) {
+      state.retryAt = Date.now() + 6 * 60000;
+      save(LS.retry, state.retryAt);
+      setTimeout(async () => {
+        if (!state.retryAt || Date.now() < state.retryAt) return;
+        state.retryAt = 0;
+        save(LS.retry, 0);
+        await scheduleAll(true);
+      }, 6 * 60000 + 1500);
+    } else {
+      state.retryAt = 0;
+      save(LS.retry, 0);
+    }
+
+    hint.textContent = (limited
+      ? '⚠️ 被 ntfy 限速（429），本轮已中止。请等 5~10 分钟再点「重新排程」，这期间别再点测试。'
+      : `保留 ${keptCount} 条 · 新增 ${sent} 条 · 撤回 ${canceled} 条` +
+        (longOnes ? `（其中 ${longOnes} 项超过 3 天，先提醒你刷新）` : '') +
+        (sent === 0 && canceled === 0 ? '（没有变化，未发任何请求）' : '')) +
+      (cancelFail ? `\n有 ${cancelFail} 条旧提醒撤回失败（浏览器限制），可能会重复收到。` : '');
+  }
+  return { sent, longOnes };
+}
+
+/* ---------- 设置面板 ---------- */
+function openSettings() {
+  $('topicInput').value = state.config.topic;
+  $('serverInput').value = state.config.server;
+  $('nameInput').value = state.config.label || '';
+  ['builder_consumable','builder_potion','research_consumable','research_potion','pet_consumable','pet_potion']
+    .forEach(k => { const el = $('mult_' + k); if (el) el.value = state.config.mults[k]; });
+  document.querySelectorAll('#segBoost button').forEach(b => {
+    b.classList.toggle('on', (b.dataset.boost === '1') === (state.config.boost !== false));
+  });
+  document.querySelectorAll('#segStack button').forEach(b => {
+    b.classList.toggle('on', b.dataset.stack === (state.config.stackMode || 'max'));
+  });
+  document.querySelectorAll('#segNotifyBoost button').forEach(b => {
+    b.classList.toggle('on', (b.dataset.nb === '1') === (state.config.notifyBoost !== false));
+  });
+  document.querySelectorAll('#segHelper button').forEach(b => {
+    b.classList.toggle('on', (b.dataset.ha === '1') === (state.config.helperAssist === true));
+  });
+  if ($('manualBoostMin')) $('manualBoostMin').value = Number(state.config.manualBoost.min) || 0;
+  if ($('manualBoostKind')) $('manualBoostKind').value = state.config.manualBoost.kind || 'builder';
+  document.querySelectorAll('#leadSeg button').forEach(b => {
+    b.classList.toggle('on', Number(b.dataset.lead) === Number(state.config.lead || 0));
+  });
+  $('settingsSheet').classList.add('open');
+}
+function closeSettings() { $('settingsSheet').classList.remove('open'); }
+
+function bindEvents() {
+  document.querySelectorAll('#tabBar button').forEach(b => {
+    b.onclick = () => {
+      state.tab = b.dataset.tab;
+      save(LS.tab, state.tab);
+      render();
+    };
+  });
+
+  $('btnSettings').onclick = openSettings;
+  $('btnCloseSettings').onclick = closeSettings;
+  $('settingsSheet').onclick = e => { if (e.target === $('settingsSheet')) closeSettings(); };
+
+  const updateCount = () => {
+    const n = $('jsonInput').value.length;
+    $('charCount').textContent = n
+      ? `已输入 ${n.toLocaleString()} 字符` + (n < 3000 ? '（偏短，正常存档 6000 字符以上）' : '')
+      : '';
+  };
+  $('jsonInput').addEventListener('input', updateCount);
+  $('jsonInput').addEventListener('paste', () => setTimeout(updateCount, 0));
+
+  $('btnAppend').onclick = async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (!txt) { toast('剪贴板是空的'); return; }
+      const ta = $('jsonInput');
+      ta.value += txt;
+      updateCount();
+      toast(`已追加 ${txt.length} 字符，共 ${ta.value.length} 字符`);
+    } catch (e) {
+      toast('读不到剪贴板，请手动点输入框粘贴');
+    }
+  };
+
+  $('btnParse').onclick = () => doParse($('jsonInput').value);
+  const importFromClipboard = async (silent) => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (!txt || !/^\s*\{\s*"tag"/.test(txt)) {
+        if (!silent) toast('剪贴板里没有村庄 JSON');
+        return false;
+      }
+      if (state.snapshot && state.snapshot.raw === txt) {
+        if (!silent) toast('剪贴板内容和上次一样');
+        return false;
+      }
+      doParse(txt);
+      if (silent) toast('已从剪贴板自动导入');
+      return true;
+    } catch (e) {
+      window.__lastClipError = (e && e.message) || String(e);
+      if (!silent) toast('浏览器不允许读剪贴板，请手动长按粘贴');
+      return false;
+    }
+  };
+
+  window.__importClip = importFromClipboard;
+  $('btnClip').onclick = () => importFromClipboard(false);
+
+  $('btnPaste').onclick = async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (txt) { $('jsonInput').value = txt; updateCount(); doParse(txt); }
+      else toast('剪贴板是空的');
+    } catch (e) {
+      toast('浏览器不允许读剪贴板，请手动长按粘贴');
+    }
+  };
+  $('fileInput').onchange = e => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { $('jsonInput').value = String(rd.result).slice(0, 2000000); doParse(String(rd.result)); };
+    rd.readAsText(f);
+  };
+
+
+  $('topicInput').oninput = e => {
+    const old = state.config.topic;
+    state.config.topic = e.target.value.trim().replace(/[^A-Za-z0-9_-]/g, '');
+    e.target.value = state.config.topic;
+    save(LS.config, state.config);
+    if (old && old !== state.config.topic) {
+      toast('主题已改：旧主题上收到的提醒请到 ntfy App 里取消订阅');
+    }
+  };
+  $('serverInput').oninput = e => {
+    state.config.server = e.target.value.trim() || 'https://ntfy.sh';
+    save(LS.config, state.config);
+  };
+  ['builder_consumable','builder_potion','research_consumable','research_potion','pet_consumable','pet_potion']
+    .forEach(k => {
+      const el = $('mult_' + k);
+      if (!el) return;
+      el.oninput = () => {
+        const v = Number(el.value);
+        if (v > 0) { state.config.mults[k] = v; save(LS.config, state.config); }
+      };
+    });
+
+  if ($('manualBoostMin')) {
+    $('manualBoostMin').oninput = () => {
+      state.config.manualBoost.min = Math.max(0, Number($('manualBoostMin').value) || 0);
+      save(LS.config, state.config);
+    };
+  }
+  if ($('manualBoostKind')) {
+    $('manualBoostKind').onchange = () => {
+      state.config.manualBoost.kind = $('manualBoostKind').value;
+      save(LS.config, state.config);
+    };
+  }
+
+  document.querySelectorAll('#segHelper button').forEach(b => {
+    b.onclick = () => {
+      state.config.helperAssist = b.dataset.ha === '1';
+      save(LS.config, state.config);
+      document.querySelectorAll('#segHelper button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    };
+  });
+
+  document.querySelectorAll('#segNotifyBoost button').forEach(b => {
+    b.onclick = () => {
+      state.config.notifyBoost = b.dataset.nb === '1';
+      save(LS.config, state.config);
+      document.querySelectorAll('#segNotifyBoost button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    };
+  });
+
+  document.querySelectorAll('#segStack button').forEach(b => {
+    b.onclick = () => {
+      state.config.stackMode = b.dataset.stack;
+      save(LS.config, state.config);
+      document.querySelectorAll('#segStack button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    };
+  });
+
+  document.querySelectorAll('#segBoost button').forEach(b => {
+    b.onclick = () => {
+      state.config.boost = b.dataset.boost === '1';
+      save(LS.config, state.config);
+      document.querySelectorAll('#segBoost button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    };
+  });
+
+  $('nameInput').oninput = e => {
+    state.config.label = e.target.value.trim();
+    save(LS.config, state.config);
+    updateSubtitle();
+  };
+  $('btnRandomTopic').onclick = () => {
+    state.config.topic = 'coc-' + Math.random().toString(36).slice(2, 10);
+    $('topicInput').value = state.config.topic;
+    save(LS.config, state.config);
+    toast('新主题已生成，记得在 ntfy App 里订阅它');
+  };
+  document.querySelectorAll('#leadSeg button').forEach(b => {
+    b.onclick = () => {
+      state.config.lead = Number(b.dataset.lead);
+      document.querySelectorAll('#leadSeg button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      save(LS.config, state.config);
+    };
+  });
+
+  $('btnTest').onclick = async () => {
+    const r = await send({
+      title: '✅ 村庄监工 · 测试通知',
+      message: `如果你在手机上看到这条，说明通道已通。\n主题：${state.config.topic}`,
+      tags: 'white_check_mark,castle',
+      priority: 4
+    });
+    if (r && r.ok) {
+      toast(r.fallback ? '已发送（后端没返回确认，但请求已发出）' : '已发送，看看手机通知栏');
+    } else {
+      const d = window.__lastSend || {};
+      toast('失败：' + (d.status ? 'HTTP ' + d.status : (d.error || '未知')) + ' / ' + (d.stage || ''));
+    }
+  };
+
+  $('btnReparse').onclick = () => {
+    if (!state.snapshot || !state.snapshot.raw) { toast('还没有存过原始 JSON，请重新粘贴一次'); return; }
+    doParse(state.snapshot.raw, true);
+    toast('已按最新规则重新解析（只改变化的部分）');
+  };
+
+  $('btnResched').onclick = async () => {
+    const r = await scheduleAll(true);
+    toast(`已重新排程 ${r.sent} 条`);
+  };
+
+  $('btnClear').onclick = () => {
+    if (!confirm('清空本地所有数据？')) return;
+    Object.values(LS).forEach(k => localStorage.removeItem(k));
+    location.reload();
+  };
+}
+
+function updateSubtitle() {
+  const label = state.config.label;
+  $('subtitle').textContent = label
+    ? `已绑定：${label}`
+    : '导入 JSON，升级到点推送到手机';
+}
+
+/* ---------- 启动 ---------- */
+bindEvents();
+updateSubtitle();
+if ($('verText')) $('verText').textContent = `村庄监工 ${APP_VERSION} · 构建 ${BUILD_DATE}`;
+render();
+
+// 打开网页不自动排程：只在手动导入 JSON 或点按钮时才排
+setInterval(() => {
+  if (state.snapshot && state.snapshot.tasks) render();
+}, 1000);
+
+// 页面重新可见时，如果快照超过 2 小时，提示刷新
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // 从游戏复制后切回来，自动读一次剪贴板（失败就算了）
+    setTimeout(() => { if (window.__importClip) window.__importClip(true); }, 400);
+  }
+  if (document.visibilityState === 'visible' && state.snapshot) {
+    const ageH = (Date.now() - state.snapshot.snapshotMs) / 3600000;
+    if (ageH > 2) toast('数据有点旧了，建议重新导出 JSON 刷新排程');
+  }
+});
+</script>
+</body>
+</html>
