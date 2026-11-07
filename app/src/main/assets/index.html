@@ -84,7 +84,6 @@
     opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:88vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .filelabel{display:inline-flex}
-  #ntfyBlock{display:none !important}
 </style>
 </head>
 <body>
@@ -92,7 +91,7 @@
 <header>
   <div class="grow">
     <h1>🏰 村庄监工</h1>
-    <div class="sub" id="subtitle">导入 JSON，升级到点推送到手机</div>
+    <div class="sub" id="subtitle">导入 JSON，升级到点自动提醒</div>
   </div>
   <button class="iconbtn" id="btnSettings" aria-label="设置">⚙️</button>
 </header>
@@ -137,27 +136,11 @@
 <div class="sheet" id="settingsSheet">
   <div class="panel">
     <div class="row">
-      <div class="grow"><h3>推送设置</h3></div>
+      <div class="grow"><h3>设置</h3></div>
       <button class="iconbtn" id="btnCloseSettings">✕</button>
     </div>
-    <div id="ntfyBlock">
-    <div class="hint" style="margin-top:6px">
-      用 ntfy.sh 免费推送：手机装个 ntfy App，订阅下面这个主题名，就能收到通知。
-    </div>
-
-    <div class="field">
-      <label>ntfy 主题名（相当于密码，别用太简单的）</label>
-      <div class="row">
-        <input type="text" id="topicInput" autocapitalize="off" autocorrect="off" spellcheck="false">
-        <button class="btn ghost small" id="btnRandomTopic" style="white-space:nowrap">随机</button>
-      </div>
-    </div>
-
-    <div class="field">
-      <label>服务器</label>
-      <input type="text" id="serverInput" autocapitalize="off" autocorrect="off" spellcheck="false">
-    </div>
-    </div>
+    <input type="hidden" id="topicInput">
+    <input type="hidden" id="serverInput">
 
     <div class="field">
       <label>提前提醒</label>
@@ -1529,13 +1512,7 @@ function bindEvents() {
     save(LS.config, state.config);
     updateSubtitle();
   };
-  $('btnRandomTopic').onclick = () => {
-    state.config.topic = 'coc-' + Math.random().toString(36).slice(2, 10);
-    $('topicInput').value = state.config.topic;
-    save(LS.config, state.config);
-    toast('新主题已生成，记得在 ntfy App 里订阅它');
-  };
-  document.querySelectorAll('#leadSeg button').forEach(b => {
+    document.querySelectorAll('#leadSeg button').forEach(b => {
     b.onclick = () => {
       state.config.lead = Number(b.dataset.lead);
       document.querySelectorAll('#leadSeg button').forEach(x => x.classList.remove('on'));
@@ -1547,7 +1524,7 @@ function bindEvents() {
   $('btnTest').onclick = async () => {
     const r = await send({
       title: '✅ 村庄监工 · 测试通知',
-      message: `如果你在手机上看到这条，说明通道已通。\n主题：${state.config.topic}`,
+      message: `如果你在手机上看到这条，说明本地提醒正常工作。`,
       tags: 'white_check_mark,castle',
       priority: 4
     });
@@ -1581,7 +1558,7 @@ function updateSubtitle() {
   const label = state.config.label;
   $('subtitle').textContent = label
     ? `已绑定：${label}`
-    : '导入 JSON，升级到点推送到手机';
+    : '导入 JSON，升级到点自动提醒';
 }
 
 /* ---------- 启动 ---------- */
