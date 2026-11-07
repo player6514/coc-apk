@@ -84,6 +84,7 @@
     opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:88vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .filelabel{display:inline-flex}
+  #ntfyBlock{display:none !important}
 </style>
 </head>
 <body>
@@ -139,6 +140,7 @@
       <div class="grow"><h3>推送设置</h3></div>
       <button class="iconbtn" id="btnCloseSettings">✕</button>
     </div>
+    <div id="ntfyBlock">
     <div class="hint" style="margin-top:6px">
       用 ntfy.sh 免费推送：手机装个 ntfy App，订阅下面这个主题名，就能收到通知。
     </div>
@@ -154,6 +156,7 @@
     <div class="field">
       <label>服务器</label>
       <input type="text" id="serverInput" autocapitalize="off" autocorrect="off" spellcheck="false">
+    </div>
     </div>
 
     <div class="field">
