@@ -1396,7 +1396,9 @@ function bindEvents() {
 
   $('btnAppend').onclick = async () => {
     try {
-      const txt = await navigator.clipboard.readText();
+      const txt = (window.AndroidAlarm && AndroidAlarm.readClipboard)
+        ? AndroidAlarm.readClipboard()
+        : (window.AndroidAlarm && AndroidAlarm.readClipboard ? AndroidAlarm.readClipboard() : await navigator.clipboard.readText());
       if (!txt) { toast('剪贴板是空的'); return; }
       const ta = $('jsonInput');
       ta.value += txt;
@@ -1410,7 +1412,7 @@ function bindEvents() {
   $('btnParse').onclick = () => doParse($('jsonInput').value);
   const importFromClipboard = async (silent) => {
     try {
-      const txt = await navigator.clipboard.readText();
+      const txt = (window.AndroidAlarm && AndroidAlarm.readClipboard ? AndroidAlarm.readClipboard() : await navigator.clipboard.readText());
       if (!txt || !/^\s*\{\s*"tag"/.test(txt)) {
         if (!silent) toast('剪贴板里没有村庄 JSON');
         return false;
@@ -1434,7 +1436,7 @@ function bindEvents() {
 
   $('btnPaste').onclick = async () => {
     try {
-      const txt = await navigator.clipboard.readText();
+      const txt = (window.AndroidAlarm && AndroidAlarm.readClipboard ? AndroidAlarm.readClipboard() : await navigator.clipboard.readText());
       if (txt) { $('jsonInput').value = txt; updateCount(); doParse(txt); }
       else toast('剪贴板是空的');
     } catch (e) {

@@ -11,10 +11,13 @@ import android.os.Bundle
 import android.provider.Settings
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebViewClient
 
 class MainActivity : Activity() {
     private lateinit var web: WebView
+    private var fileCallback: ValueCallback<Array<Uri>>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +30,27 @@ class MainActivity : Activity() {
             databaseEnabled = true
         }
         web.webViewClient = WebViewClient()
+        web.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                wv: WebView?,
+                cb: ValueCallback<Array<Uri>>?,
+                params: FileChooserParams?
+            ): Boolean {
+                fileCallback?.onReceiveValue(null)
+                fileCallback = cb
+                return try {
+                    val i = Intent(Intent.ACTION_GET_CONTENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "*/*"
+                    }
+                    startActivityForResult(Intent.createChooser(i, "选择村庄数据文件"), 100)
+                    true
+                } catch (e: Exception) {
+                    fileCallback = null
+                    false
+                }
+            }
+        }
         web.addJavascriptInterface(Bridge(), "AndroidAlarm")
         web.loadUrl("file:///android_asset/index.html")
 
@@ -57,6 +81,16 @@ class MainActivity : Activity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == 100) {
+            val uri = if (resultCode == RESULT_OK) data?.data else null
+            fileCallback?.onReceiveValue(if (uri != null) arrayOf(uri) else null)
+            fileCallback = null
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun onBackPressed() {
         if (::web.isInitialized && web.canGoBack()) web.goBack() else super.onBackPressed()
     }
@@ -76,6 +110,14 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun version(): String = BuildConfig.VERSION_NAME
+
+        @JavascriptInterface
+        fun readClipboard(): String {
+            return try {
+                val cm = getSystemService(android.content.ClipboardManager::class.java)
+                cm?.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+            } catch (e: Exception) { "" }
+        }
 
         @JavascriptInterface
         fun cancelAll() {
