@@ -11,8 +11,8 @@ android {
         applicationId = "com.player6514.coc"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = (project.findProperty("verCode") as String? ?: "1").toInt()
+        versionName = (project.findProperty("verName") as String? ?: "1.0")
     }
 
     signingConfigs {
@@ -44,3 +44,4 @@ android {
         jvmTarget = "17"
     }
 }
+

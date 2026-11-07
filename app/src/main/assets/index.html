@@ -1235,12 +1235,8 @@ async function scheduleAll(force) {
     plan.push({ t, at, isLong });
   }
 
-  // 主世界（建筑/陷阱/英雄）只排最早完成的 2 个
-  const HOME_GROUPS = ['buildings', 'traps', 'heroes'];
-  const homePlan = plan.filter(x => HOME_GROUPS.indexOf(x.t.group) >= 0).sort((a, b) => a.at - b.at);
-  const allowedHome = {};
-  homePlan.slice(0, 2).forEach(x => { allowedHome[x.t.key] = 1; });
-  const planFinal = plan.filter(x => HOME_GROUPS.indexOf(x.t.group) < 0 || allowedHome[x.t.key]);
+  // APK 版不依赖 ntfy，没有额度限制：全部排程
+  const planFinal = plan;
 
   // 2) 和已有排程对齐：没变的保留，变了/消失的撤回
   const existing = state.scheduled.filter(s => s && s.topic === state.config.topic && s.at > now);
@@ -1589,7 +1585,11 @@ function updateSubtitle() {
 /* ---------- 启动 ---------- */
 bindEvents();
 updateSubtitle();
-if ($('verText')) $('verText').textContent = `村庄监工 ${APP_VERSION} · 构建 ${BUILD_DATE}`;
+if ($('verText')) {
+  let v = APP_VERSION;
+  try { if (window.AndroidAlarm && AndroidAlarm.version) v = 'APK ' + AndroidAlarm.version(); } catch (e) {}
+  $('verText').textContent = `村庄监工 ${v} · 构建 ${BUILD_DATE}`;
+}
 render();
 
 // 打开网页不自动排程：只在手动导入 JSON 或点按钮时才排

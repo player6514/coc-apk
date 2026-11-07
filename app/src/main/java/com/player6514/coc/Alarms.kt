@@ -34,13 +34,30 @@ object Alarms {
             putExtra("body", body)
         }
         val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        // requestCode 用 key 的 hash，保证同一任务可覆盖
         return PendingIntent.getBroadcast(c, key.hashCode(), i, flags)
     }
 
+    private fun showPi(c: Context, key: String): PendingIntent {
+        val i = Intent(c, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        return PendingIntent.getActivity(
+            c, key.hashCode(), i,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
+    /**
+     * 用 setAlarmClock 登记：这是系统里优先级最高的闹钟（和系统闹钟同级），
+     * 后台被划掉、Doze 休眠都更不容易被吞掉。
+     */
     fun schedule(c: Context, key: String, at: Long, title: String, body: String) {
         val am = c.getSystemService(AlarmManager::class.java) ?: return
         val p = pi(c, key, title, body)
+        try {
+            am.setAlarmClock(AlarmManager.AlarmClockInfo(at, showPi(c, key)), p)
+            return
+        } catch (e: Exception) { }
         try {
             am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, p)
         } catch (e: SecurityException) {
@@ -53,7 +70,6 @@ object Alarms {
         am.cancel(pi(c, key, "", ""))
     }
 
-    /** 开机或启动时，把所有未到点的闹钟重新登记 */
     fun rescheduleAll(c: Context) {
         val now = System.currentTimeMillis()
         AlarmStore.all(c).forEach { (k, v) ->

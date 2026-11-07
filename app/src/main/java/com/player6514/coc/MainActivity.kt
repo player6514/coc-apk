@@ -37,7 +37,15 @@ class MainActivity : Activity() {
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         }
-        if (Build.VERSION.SDK_INT >= 31) {
+        // 申请电池优化白名单：不然后台被清理后，闹钟可能被系统压掉
+        if (Build.VERSION.SDK_INT >= 23) {
+            val pm = getSystemService(android.os.PowerManager::class.java)
+            if (pm != null && !pm.isIgnoringBatteryOptimizations(packageName)) {
+                try {
+                    startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
+                } catch (e: Exception) { }
+            }
+        }        if (Build.VERSION.SDK_INT >= 31) {
             val am = getSystemService(AlarmManager::class.java)
             if (am != null && !am.canScheduleExactAlarms()) {
                 try {
@@ -65,8 +73,13 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun version(): String = BuildConfig.VERSION_NAME
+
+        @JavascriptInterface
         fun cancelAll() {
             AlarmStore.all(this@MainActivity).keys.toList().forEach { cancel(it) }
         }
     }
 }
+
+
