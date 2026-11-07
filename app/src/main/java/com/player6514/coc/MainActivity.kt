@@ -45,7 +45,9 @@ class MainActivity : Activity() {
                     startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName")))
                 } catch (e: Exception) { }
             }
-        }        if (Build.VERSION.SDK_INT >= 31) {
+        }
+
+        if (Build.VERSION.SDK_INT >= 31) {
             val am = getSystemService(AlarmManager::class.java)
             if (am != null && !am.canScheduleExactAlarms()) {
                 try {
