@@ -118,6 +118,12 @@
 
 <div id="statusBar" class="row wrap" style="margin:2px 2px 10px"></div>
 
+<nav class="tabs" id="pageBar">
+  <button data-page="remind" class="on">提醒</button>
+  <button data-page="calc">计算</button>
+</nav>
+
+<div id="pageRemind">
 <nav class="tabs" id="tabBar">
   <button data-tab="home">主世界</button>
   <button data-tab="lab">实验室</button>
@@ -130,6 +136,17 @@
 
 <div id="emptyBox" class="empty">
   还没有数据。<br>把游戏导出的 JSON 贴到上面，就能看到每个升级还要多久。
+</div>
+</div>
+
+<div id="pageCalc" style="display:none">
+  <section>
+    <h2>如果现在开这些加速</h2>
+    <div id="calcList"></div>
+    <button class="btn" id="btnCalcRun" style="width:100%;margin-top:14px">完成</button>
+    <div class="hint" id="calcHint" style="margin-top:8px">选好要开的道具，点「完成」看新的预计时间。</div>
+  </section>
+  <div id="calcResult"></div>
 </div>
 
 <!-- 设置 -->
@@ -279,7 +296,7 @@ const UNIT_NAMES = {
   26000005:"冰冻法术", 26000009:"毒药法术", 26000010:"地震法术", 26000011:"急速法术", 26000016:"镜像法术", 26000017:"骷髅法术",
   26000028:"蝙蝠法术", 26000035:"隐形法术", 26000053:"召回法术", 26000070:"蔓生法术", 26000098:"复活法术", 26000109:"冰封法术",
   26000120:"图腾法术", 26000123:"愤怒法术", 28000000:"野蛮人之王", 28000001:"弓箭女皇", 28000002:"大守护者", 28000003:"战争机器",
-  28000004:"皇家冠军", 28000005:"战斗直升机", 28000006:"亡灵王子", 28000007:"龙公爵", 73000000:"L.A.S.S.I", 73000001:"蛮力牦牛",
+  28000004:"飞盾战神", 28000005:"战斗直升机", 28000006:"亡灵王子", 28000007:"龙公爵", 73000000:"L.A.S.S.I", 73000001:"蛮力牦牛",
   73000002:"电猫头鹰", 73000003:"独角兽", 73000004:"凤凰", 73000007:"毒蜥蜴", 73000008:"Diggy", 73000009:"Frosty",
   73000010:"灵狐", 73000011:"愤怒果冻", 73000016:"喷嚏", 73000017:"贪婪乌鸦", 93000000:"建筑工人学徒", 93000001:"实验室助手",
   93000002:"勘探者", 107000000:"Longshot", 107000001:"Smasher", 107000008:"Logger",
@@ -358,36 +375,41 @@ function finishSeconds(W, adds) {
 // 完整模拟：药水先跑，再按助手状态逐段推进，最后一件活没干完就按比例收尾
 function simulateFinish(W, opts) {
   let left = W, t = 0, assist = 0;
-  const potionMult = opts.potion ? opts.potion.rate : 1;
-  const potionSec = opts.potion ? opts.potion.sec : 0;
+  const pSec = opts.potion ? opts.potion.sec : 0;
+  const pRate = opts.potion ? opts.potion.rate : 1;
   const hb = opts.helper;
 
-  // 药水与助手同时生效时：速率相加（实测 10 + 9 = 19 倍）
   if (hb && hb.sec > 0) {
-    const both = Math.min(potionSec, hb.sec);
+    const both = Math.min(pSec, hb.sec);
     if (both > 0) {
-      const rate = potionMult + (hb.rate - 1);
+      const rate = pRate + (hb.rate - 1);
       const cap = both * rate;
       if (left <= cap) return { t: t + left / rate, assist: assist + left / rate };
       left -= cap; t += both; assist += both;
     }
     const rest = hb.sec - both;
     if (rest > 0) {
-      const rate = (potionSec > both) ? (potionMult + (hb.rate - 1)) : hb.rate;
+      const rate = hb.rate;
       const cap = rest * rate;
       if (left <= cap) return { t: t + left / rate, assist: assist + left / rate };
       left -= cap; t += rest; assist += rest;
     }
-  } else if (potionSec > 0) {
-    const cap = potionSec * potionMult;
-    if (left <= cap) return { t: t + left / potionMult, assist };
-    left -= cap; t += potionSec;
+    // 助手结束后，药水可能还没到期：把剩下的药水时间按药水倍率算
+    if (pSec > both) {
+      const pd = pSec - both;
+      const cap = pd * pRate;
+      if (left <= cap) return { t: t + left / pRate, assist };
+      left -= cap; t += pd;
+    }
+  } else if (pSec > 0) {
+    const cap = pSec * pRate;
+    if (left <= cap) return { t: t + left / pRate, assist };
+    left -= cap; t += pSec;
   }
 
   if (!hb) return { t: t + left, assist };
   if (!hb.recurrent) return { t: t + left, assist };
 
-  // 持续指派：每天 1 小时，速率 = 1 + 助手倍率
   let cd = hb.cd;
   for (let i = 0; i < 5000 && left > 0; i++) {
     if (left <= cd) return { t: t + left, assist };
@@ -1587,6 +1609,109 @@ document.addEventListener('visibilitychange', () => {
     if (ageH > 2) toast('数据有点旧了，建议重新导出 JSON 刷新排程');
   }
 });
+</script>
+<script>
+﻿/* 计算页：模拟“现在开某些道具”后的预计完成时间（不提醒） */
+(function () {
+  var ITEMS = [
+    { key: 'builder_boost',       label: '建筑工人药水', mult: 10, tip: '建筑 / 陷阱 / 英雄' },
+    { key: 'builder_consumable',  label: '建筑工人大餐', mult: 2,  tip: '建筑 / 陷阱 / 英雄' },
+    { key: 'lab_boost',           label: '研究药水',     mult: 24, tip: '实验室' },
+    { key: 'research_consumable', label: '研究汤',       mult: 4,  tip: '实验室' },
+    { key: 'pet_potion',          label: '战宠药水',     mult: 24, tip: '战宠' }
+  ];
+  var counts = {};
+  ITEMS.forEach(function (i) { counts[i.key] = 0; });
+  var GROUPS = ['buildings', 'traps', 'heroes', 'pets', 'units', 'spells', 'siege_machines', 'equipment'];
+
+  function el(id) { return document.getElementById(id); }
+
+  function renderList() {
+    var box = el('calcList');
+    if (!box) return;
+    box.innerHTML = ITEMS.map(function (it) {
+      return '<div class="row" style="justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)">'
+        + '<div><div style="font-size:15px;font-weight:700">' + it.label + '</div>'
+        + '<div class="hint" style="font-size:11px">' + it.mult + ' 倍 · ' + it.tip + ' · 每份 1 小时</div></div>'
+        + '<div class="row" style="gap:12px;align-items:center">'
+        + '<button class="btn ghost small" data-minus="' + it.key + '">−</button>'
+        + '<span id="cnt-' + it.key + '" style="min-width:24px;text-align:center;font-size:17px;font-weight:700">' + counts[it.key] + '</span>'
+        + '<button class="btn ghost small" data-plus="' + it.key + '">+</button>'
+        + '</div></div>';
+    }).join('');
+
+    box.querySelectorAll('[data-plus]').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-plus');
+        counts[k] = Math.min(9, counts[k] + 1);
+        el('cnt-' + k).textContent = counts[k];
+      };
+    });
+    box.querySelectorAll('[data-minus]').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-minus');
+        counts[k] = Math.max(0, counts[k] - 1);
+        el('cnt-' + k).textContent = counts[k];
+      };
+    });
+  }
+
+  function run() {
+    var snap = state.snapshot;
+    if (!snap || !snap.raw) { el('calcHint').textContent = '先导入一次 JSON 再算。'; return; }
+    var d;
+    try { d = JSON.parse(snap.raw); } catch (e) { el('calcHint').textContent = '存档解析失败，重新导入一次。'; return; }
+
+    var added = ITEMS.filter(function (it) { return counts[it.key] > 0; });
+    if (!added.length) { el('calcHint').textContent = '先加上至少一个道具。'; el('calcResult').innerHTML = ''; return; }
+
+    d.boosts = d.boosts || {};
+    added.forEach(function (it) {
+      d.boosts[it.key] = (Number(d.boosts[it.key]) || 0) + counts[it.key] * 3600;
+    });
+
+    var r;
+    try { r = parseVillage(JSON.stringify(d), state.config.mults || {}, true, null); }
+    catch (e) { el('calcHint').textContent = '计算出错：' + e.message; return; }
+
+    var list = r.tasks.filter(function (t) {
+      return GROUPS.indexOf(t.group) >= 0 && !t.cooldown;
+    }).sort(function (a, b) { return a.finishMs - b.finishMs; });
+
+    el('calcHint').textContent = '已算上：' + added.map(function (it) {
+      return it.label + ' ×' + counts[it.key];
+    }).join('、') + '（只做估算，不会提醒）';
+
+    el('calcResult').innerHTML = list.map(function (t) {
+      return '<div class="task"><div class="top"><div class="grow">'
+        + '<div class="cat">' + (t.icon || '') + ' ' + (t.groupLabel || '') + '</div>'
+        + '<div class="name">' + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
+        + '</div><div>'
+        + '<div class="time">' + fmtRemain(t.remainingSec * 1000) + '</div>'
+        + '<div class="fin">预计 ' + fmtClock(t.finishMs, r.snapshotMs) + '</div>'
+        + '</div></div></div>';
+    }).join('');
+  }
+
+  setTimeout(function () {
+    renderList();
+    var b = el('btnCalcRun');
+    if (b) b.onclick = run;
+  }, 0);
+
+  document.querySelectorAll('#pageBar button').forEach(function (b) {
+    b.onclick = function () {
+      var pg = b.getAttribute('data-page');
+      document.querySelectorAll('#pageBar button').forEach(function (x) {
+        x.classList.toggle('on', x === b);
+      });
+      document.getElementById('pageRemind').style.display = pg === 'remind' ? '' : 'none';
+      document.getElementById('pageCalc').style.display = pg === 'calc' ? '' : 'none';
+      if (pg === 'calc') renderList();
+    };
+  });
+})();
+
 </script>
 </body>
 </html>
