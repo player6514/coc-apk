@@ -48,7 +48,7 @@
   .task .top{display:flex;align-items:flex-start;gap:10px}
   .task .cat{font-size:11px;color:var(--muted);letter-spacing:.4px}
   .task .name{font-size:16px;font-weight:700;margin-top:1px}
-  .task .name .lv{color:var(--accent);font-size:13px;font-weight:600;margin-left:6px}
+  .task .name .lv{white-space:nowrap;color:var(--accent);font-size:13px;font-weight:600;margin-left:6px}
   .task .time{font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;text-align:right;line-height:1.1;
     letter-spacing:.5px}
   .task .time.small{font-size:15px}
@@ -1682,7 +1682,7 @@ document.addEventListener('visibilitychange', () => {
       return it.label + ' ×' + counts[it.key];
     }).join('、') + '（只做估算，不会提醒）';
 
-    el('calcResult').innerHTML = list.map(function (t) {
+    function card(t) {
       return '<div class="task"><div class="top"><div class="grow">'
         + '<div class="cat">' + (t.icon || '') + ' ' + (t.groupLabel || '') + '</div>'
         + '<div class="name">' + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
@@ -1690,7 +1690,19 @@ document.addEventListener('visibilitychange', () => {
         + '<div class="time">' + fmtRemain(t.remainingSec * 1000) + '</div>'
         + '<div class="fin">预计 ' + fmtClock(t.finishMs, r.snapshotMs) + '</div>'
         + '</div></div></div>';
-    }).join('');
+    }
+    function section(title, arr) {
+      if (!arr.length) return '';
+      return '<h2 style="margin:16px 4px 8px">' + title + '</h2>' + arr.map(card).join('');
+    }
+    var homeList = list.filter(function (t) { return ['buildings', 'traps', 'heroes'].indexOf(t.group) >= 0; });
+    var petList = list.filter(function (t) { return t.group === 'pets'; });
+    var labList = list.filter(function (t) { return ['units', 'spells', 'siege_machines', 'equipment'].indexOf(t.group) >= 0; });
+
+    el('calcResult').innerHTML =
+      section('主世界', homeList) +
+      section('实验室 · 战宠', petList) +
+      section('实验室', labList);
   }
 
   setTimeout(function () {
