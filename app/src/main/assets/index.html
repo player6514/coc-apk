@@ -1611,7 +1611,7 @@ document.addEventListener('visibilitychange', () => {
 });
 </script>
 <script>
-﻿/* 计算页：模拟“现在开某些道具”后的预计完成时间（不提醒） */
+﻿/* 计算页：模拟“现在开某些道具”后的预计完成时间（只估算，不提醒） */
 (function () {
   var ITEMS = [
     { key: 'builder_boost',       label: '建筑工人药水', mult: 10, tip: '建筑 / 陷阱 / 英雄' },
@@ -1622,9 +1622,16 @@ document.addEventListener('visibilitychange', () => {
   ];
   var counts = {};
   ITEMS.forEach(function (i) { counts[i.key] = 0; });
-  var GROUPS = ['buildings', 'traps', 'heroes', 'pets', 'units', 'spells', 'siege_machines', 'equipment'];
+
+  var lastList = null;      // 上次算出来的结果（绝对完成时刻）
+  var lastSnapMs = 0;
 
   function el(id) { return document.getElementById(id); }
+
+  function fmtLeft(ms) {
+    if (ms <= 0) return '已到时间';
+    return fmtRemain(ms);
+  }
 
   function renderList() {
     var box = el('calcList');
@@ -1656,14 +1663,79 @@ document.addEventListener('visibilitychange', () => {
     });
   }
 
+  function card(t, i) {
+    return '<div class="task"><div class="top"><div class="grow">'
+      + '<div class="cat">' + (t.icon || '') + ' ' + (t.groupLabel || '') + '</div>'
+      + '<div class="name">' + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
+      + '</div><div>'
+      + '<div class="time" data-left="' + i + '">' + fmtLeft(t.finishMs - Date.now()) + '</div>'
+      + '<div class="fin">预计 ' + fmtClock(t.finishMs, lastSnapMs) + '</div>'
+      + '</div></div></div>';
+  }
+
+  function renderResult() {
+    if (!lastList) return;
+    function section(title, arr) {
+      if (!arr.length) return '';
+      return '<h2 style="margin:16px 4px 8px">' + title + '</h2>' + arr.map(card).join('');
+    }
+    var home = lastList.filter(function (t) { return ['buildings', 'traps', 'heroes'].indexOf(t.group) >= 0; });
+    var pets = lastList.filter(function (t) { return t.group === 'pets'; });
+    var lab = lastList.filter(function (t) { return ['units', 'spells', 'siege_machines', 'equipment'].indexOf(t.group) >= 0; });
+    el('calcResult').innerHTML =
+      section('主世界', home) + section('实验室 · 战宠', pets) + section('实验室', lab);
+  }
+
+  // 每秒只更新倒计时文字，不重排、不清滚动位置
+  function tick() {
+    if (!lastList) return;
+    var now = Date.now();
+    lastList.forEach(function (t, i) {
+      var n = document.querySelector('[data-left="' + i + '"]');
+      if (n) n.textContent = fmtLeft(t.finishMs - now);
+    });
+  }
+  setInterval(tick, 1000);
+
+  // 把存档“推进到现在”：扣掉这段时间里已经消耗的工作量和药水时长
+  function advanceToNow(raw, mults) {
+    var base = parseVillage(raw, mults, true, null);
+    var now = Date.now();
+    var delta = Math.max(0, Math.floor((now - base.snapshotMs) / 1000));
+    var d = JSON.parse(raw);
+    d.timestamp = Math.floor(now / 1000);
+
+    var speed = {};
+    base.tasks.forEach(function (t) {
+      if (t.baseSec && t.remainingSec > 0) speed[t.group + ':' + t.id] = t.baseSec / t.remainingSec;
+    });
+
+    Object.keys(d.boosts || {}).forEach(function (k) {
+      d.boosts[k] = Math.max(0, (Number(d.boosts[k]) || 0) - delta);
+    });
+
+    ['buildings', 'traps', 'heroes', 'units', 'spells', 'siege_machines', 'pets'].forEach(function (g) {
+      (d[g] || []).forEach(function (e) {
+        if (e.timer) {
+          var rate = speed[g + ':' + e.data] || 1;
+          e.timer = Math.max(0, Math.round(e.timer - rate * delta));
+        }
+        if (e.helper_timer) e.helper_timer = Math.max(0, Math.round(e.helper_timer - delta));
+      });
+    });
+    return d;
+  }
+
   function run() {
     var snap = state.snapshot;
     if (!snap || !snap.raw) { el('calcHint').textContent = '先导入一次 JSON 再算。'; return; }
-    var d;
-    try { d = JSON.parse(snap.raw); } catch (e) { el('calcHint').textContent = '存档解析失败，重新导入一次。'; return; }
 
     var added = ITEMS.filter(function (it) { return counts[it.key] > 0; });
-    if (!added.length) { el('calcHint').textContent = '先加上至少一个道具。'; el('calcResult').innerHTML = ''; return; }
+    if (!added.length) { el('calcHint').textContent = '先加上至少一个道具。'; lastList = null; el('calcResult').innerHTML = ''; return; }
+
+    var d;
+    try { d = advanceToNow(snap.raw, state.config.mults || {}); }
+    catch (e) { el('calcHint').textContent = '存档解析失败：' + e.message; return; }
 
     d.boosts = d.boosts || {};
     added.forEach(function (it) {
@@ -1674,35 +1746,16 @@ document.addEventListener('visibilitychange', () => {
     try { r = parseVillage(JSON.stringify(d), state.config.mults || {}, true, null); }
     catch (e) { el('calcHint').textContent = '计算出错：' + e.message; return; }
 
-    var list = r.tasks.filter(function (t) {
-      return GROUPS.indexOf(t.group) >= 0 && !t.cooldown;
+    lastSnapMs = r.snapshotMs;
+    lastList = r.tasks.filter(function (t) {
+      return ['buildings', 'traps', 'heroes', 'pets', 'units', 'spells', 'siege_machines', 'equipment'].indexOf(t.group) >= 0 && !t.cooldown;
     }).sort(function (a, b) { return a.finishMs - b.finishMs; });
 
     el('calcHint').textContent = '已算上：' + added.map(function (it) {
       return it.label + ' ×' + counts[it.key];
-    }).join('、') + '（只做估算，不会提醒）';
+    }).join('、') + '（按现在的时间估算，不会提醒）';
 
-    function card(t) {
-      return '<div class="task"><div class="top"><div class="grow">'
-        + '<div class="cat">' + (t.icon || '') + ' ' + (t.groupLabel || '') + '</div>'
-        + '<div class="name">' + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
-        + '</div><div>'
-        + '<div class="time">' + fmtRemain(t.remainingSec * 1000) + '</div>'
-        + '<div class="fin">预计 ' + fmtClock(t.finishMs, r.snapshotMs) + '</div>'
-        + '</div></div></div>';
-    }
-    function section(title, arr) {
-      if (!arr.length) return '';
-      return '<h2 style="margin:16px 4px 8px">' + title + '</h2>' + arr.map(card).join('');
-    }
-    var homeList = list.filter(function (t) { return ['buildings', 'traps', 'heroes'].indexOf(t.group) >= 0; });
-    var petList = list.filter(function (t) { return t.group === 'pets'; });
-    var labList = list.filter(function (t) { return ['units', 'spells', 'siege_machines', 'equipment'].indexOf(t.group) >= 0; });
-
-    el('calcResult').innerHTML =
-      section('主世界', homeList) +
-      section('实验室 · 战宠', petList) +
-      section('实验室', labList);
+    renderResult();
   }
 
   setTimeout(function () {
@@ -1719,10 +1772,11 @@ document.addEventListener('visibilitychange', () => {
       });
       document.getElementById('pageRemind').style.display = pg === 'remind' ? '' : 'none';
       document.getElementById('pageCalc').style.display = pg === 'calc' ? '' : 'none';
-      if (pg === 'calc') renderList();
+      if (pg === 'calc') { renderList(); renderResult(); tick(); }
     };
   });
 })();
+
 
 </script>
 </body>
