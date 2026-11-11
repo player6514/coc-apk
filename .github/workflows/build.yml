@@ -40,6 +40,12 @@ jobs:
               -dname "CN=coc-tracker, OU=coc, O=coc, L=Beijing, ST=Beijing, C=CN"
           fi
 
+      - name: Unzip icons
+        run: |
+          if [ -f app/src/main/assets/icons.zip ]; then
+            cd app/src/main/assets && unzip -o -q icons.zip -d icons && rm icons.zip
+          fi
+
       - name: Build release APK
         run: gradle assembleRelease --no-daemon -PverCode=${{ github.run_number }} -PverName=1.0.${{ github.run_number }}
 
