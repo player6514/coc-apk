@@ -47,7 +47,7 @@
   .task.done{opacity:.55}
   .task .top{display:flex;align-items:flex-start;gap:10px}
   .task .cat{font-size:11px;color:var(--muted);letter-spacing:.4px}
-  .task .name{font-size:16px;font-weight:700;margin-top:1px}
+  .task .name{font-size:16px;font-weight:700;margin-top:1px;display:flex;align-items:center;gap:8px}
   .task .name .lv{white-space:nowrap;color:var(--accent);font-size:13px;font-weight:600;margin-left:6px}
   .task .time{font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;text-align:right;line-height:1.1;
     letter-spacing:.5px}
@@ -84,7 +84,7 @@
     opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:88vw;text-align:center}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .filelabel{display:inline-flex}
-  .task .name img.ico{width:26px;height:26px;border-radius:7px;vertical-align:-6px;margin-right:7px;object-fit:cover}
+  .task .name img.ico{width:26px;height:26px;border-radius:7px;object-fit:cover;flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -1014,8 +1014,8 @@ function taskHtml(t, now, isDone) {
   return `<div class="task ${isDone ? 'done' : ''} ${soon ? 'soon' : ''}">
     <div class="top">
       <div class="grow">
-        <div class="cat">${iconHtml(t)} ${escapeHtml(t.groupLabel)}</div>
-        <div class="name" data-act="rename" data-key="${escapeHtml(t.key)}" title="点我改名">${name}${lvTxt}</div>
+        <div class="cat">${escapeHtml(t.groupLabel)}</div>
+        <div class="name" data-act="rename" data-key="${escapeHtml(t.key)}" title="点我改名">${iconHtml(t)}${name}${lvTxt}</div>
       </div>
       <div>
         <div class="time ${isDone ? 'small' : ''}">${remainTxt}</div>
@@ -1674,8 +1674,8 @@ document.addEventListener('visibilitychange', () => {
 
   function card(t, i) {
     return '<div class="task"><div class="top"><div class="grow">'
-      + '<div class="cat">' + iconHtml(t) + ' ' + (t.groupLabel || '') + '</div>'
-      + '<div class="name">' + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
+      + '<div class="cat">' + (t.groupLabel || '') + '</div>'
+      + '<div class="name">' + iconHtml(t) + displayName(t) + '<span class="lv">Lv' + t.lvl + ' → ' + (t.lvl + 1) + '</span></div>'
       + '</div><div>'
       + '<div class="time" data-left="' + i + '">' + fmtLeft(t.finishMs - Date.now()) + '</div>'
       + '<div class="fin">预计 ' + fmtClock(t.finishMs, lastSnapMs) + '</div>'
